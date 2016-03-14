@@ -1,5 +1,6 @@
 # this is on slurm system
-
+# seismoDD 
+#
 cd specfem2d
 ./configure FC=ifort --with-mpi
 make clean
