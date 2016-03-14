@@ -1,0 +1,27 @@
+# this is on slurm system
+
+cd specfem2d
+./configure FC=ifort --with-mpi
+make clean
+make all
+
+cd seisDD/lib
+make -f make_ifort clean
+make -f make_ifort
+
+cd Exp1
+./run_this_example.sh
+cd submit_job
+./submit.sh
+
+cd Exp2
+./run_this_example.sh
+cd submit_job
+./submit.sh
+
+
+cd Exp3
+./run_this_example.sh
+cd submit_job
+./submit.sh
+ 
