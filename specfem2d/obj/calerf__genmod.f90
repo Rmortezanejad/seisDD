@@ -1,0 +1,10 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Fri Mar 25 15:09:41 2016
+        MODULE CALERF__genmod
+          INTERFACE 
+            SUBROUTINE CALERF(ARG,RESULT,JINTVAL)
+              REAL(KIND=8) :: ARG
+              REAL(KIND=8) :: RESULT
+              INTEGER(KIND=4) :: JINTVAL
+            END SUBROUTINE CALERF
+          END INTERFACE 
+        END MODULE CALERF__genmod

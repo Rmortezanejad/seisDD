@@ -1,0 +1,8 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Fri Mar 25 15:09:22 2016
+        MODULE GMAT01__genmod
+          INTERFACE 
+            SUBROUTINE GMAT01(F0)
+              REAL(KIND=8) :: F0
+            END SUBROUTINE GMAT01
+          END INTERFACE 
+        END MODULE GMAT01__genmod

@@ -1,0 +1,9 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Fri Mar 25 15:09:20 2016
+        MODULE MAX_ALL_I__genmod
+          INTERFACE 
+            SUBROUTINE MAX_ALL_I(SENDBUF,RECVBUF)
+              INTEGER(KIND=4) :: SENDBUF
+              INTEGER(KIND=4) :: RECVBUF
+            END SUBROUTINE MAX_ALL_I
+          END INTERFACE 
+        END MODULE MAX_ALL_I__genmod
