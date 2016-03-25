@@ -1,6 +1,8 @@
 # this is on slurm system
 # seismoDD 
 #
+# with this specfem2d, I added an example of using tomo
+# file to input attentuaton model
 cd specfem2d
 ./configure FC=ifort --with-mpi
 make clean
