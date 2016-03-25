@@ -6,10 +6,8 @@ Main "historical" developers: Dimitri Komatitsch and Jeroen Tromp
 
 For a quick test, run the default example with these commands:
 
-  ./configure FC=gfortran
+  ./configure FC=ifort --with-mpi
+  make clean 
   make all
-  ./bin/xmeshfem2D
-  ./bin/xspecfem2D
 
-and check the output files in ./OUTPUT_FILES/
-
+and check the examples in EXAMPLES
