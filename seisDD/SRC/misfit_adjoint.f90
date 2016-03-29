@@ -679,6 +679,7 @@ use seismo_parameters
                   print*      
                   print*,'pair irec=',irec, 'jrec=',jrec           
                   print*,'window -- ',ntstart,ntend,ntstart_ref,ntend_ref
+                  print*, 'cc similarity -- ', cc_max_obs 
                   print*,'is_pair : ',is_pair(irec,jrec)
               endif 
          
@@ -705,6 +706,8 @@ use seismo_parameters
                       misfit_value,adj,adj_ref)
                   if(DISPLAY_DETAILS .and. compute_adjoint .and. jrec==irec+1) then
                       print*,'misfit_',trim(measurement_type),'_DD=',misfit_value
+                      print*, 'Min/Max of adj:',maxval(adj(:)),minval(adj(:))
+                      print*, 'Min/Max of adj_ref:',maxval(adj_ref(:)),minval(adj_ref(:))
                   endif
                 
                   ! sum over itype of misfit and adjoint

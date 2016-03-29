@@ -639,7 +639,7 @@ if(nlen<1 .or. nlen>npts) print*,'check nlen ',nlen
 
 
        ! misfit
-       misfit_output =sqrt( 1.0/(nlen*deltat) * sum((real_diff(1:nlen))**2*deltat)) ! + sum((imag_diff(1:nlen))**2*deltat))
+       misfit_output =sqrt( sum((real_diff(1:nlen))**2*deltat)  + sum((imag_diff(1:nlen))**2*deltat))
 
      if(DISPLAY_DETAILS) then
      print*
@@ -665,17 +665,17 @@ if(nlen<1 .or. nlen>npts) print*,'check nlen ',nlen
        ! E_ratio
        epslon=wtr_env*maxval(E_s)
        ! real part
-       E_ratio = (real_diff*hilbt_s**2 )/(E_s+epslon)**3
-       hilbt_ratio = (real_diff*s_tw*hilbt_s)/(E_s+epslon)**3
+       !E_ratio = (real_diff*hilbt_s**2 )/(E_s+epslon)**3
+       !hilbt_ratio = (real_diff*s_tw*hilbt_s)/(E_s+epslon)**3
        ! both real and imaginary
-       !E_ratio = (real_diff*hilbt_s**2 - imag_diff*s_tw*hilbt_s) /(E_s+epslon)**3
-       !hilbt_ratio = (real_diff*s_tw*hilbt_s-imag_diff*s_tw**2)/(E_s+epslon)**3
+       E_ratio = (real_diff*hilbt_s**2 - imag_diff*s_tw*hilbt_s) /(E_s+epslon)**3
+       hilbt_ratio = (real_diff*s_tw*hilbt_s-imag_diff*s_tw**2)/(E_s+epslon)**3
        ! hilbert transform for hilbt_ratio
        call hilbert(hilbt_ratio,nlen)
 
        ! adjoint source
        adj_tw(1:nlen)=E_ratio(1:nlen) + hilbt_ratio
-       adj_tw(1:nlen)=adj_tw(1:nlen)*1.0/(nlen*deltat) ! *tas(1:nlen)*tas(1:nlen)
+      ! adj_tw(1:nlen)=adj_tw(1:nlen)*1.0/(nlen*deltat) ! *tas(1:nlen)*tas(1:nlen)
 
     ! reverse window and taper again 
     call cc_window_inverse(adj_tw,npts,window_type,i_tstart,i_tend,0,0.d0,adj)
@@ -922,6 +922,7 @@ call cc_window(s2,npts,window_type,i_tstart2,i_tend2,0,0.d0,nlen2,s2_tw)
 if(nlen1<1 .or. nlen1>npts) print*,'check nlen1 ',nlen1
 if(nlen2<1 .or. nlen2>npts) print*,'check nlen2 ',nlen2
 nlen = max(nlen1,nlen2)
+
 !! DD cc-misfit
 call xcorr_calc(d1_tw,d2_tw,npts,1,nlen,ishift_obs,dlnA_obs,cc_max_obs) ! T(d1-d2)
        tshift_obs= ishift_obs*deltat
@@ -989,14 +990,11 @@ adj2(1:npts) = 0.0
 
   ! constant on the bottom 
   Mtr=-sum(s1_tw_vel(1:nlen)*s2_tw_cc_vel(1:nlen))*deltat
- ! Mtr=- sqrt(sum(s1_tw_vel(1:nlen)**2)*deltat) * sqrt(sum(s2_tw_vel(1:nlen)**2)*deltat)
 
     ! adjoint source
        adj1_tw(1:nlen)= ddtshift_cc * s2_tw_cc_vel(1:nlen)/Mtr
        adj2_tw(1:nlen)= -ddtshift_cc * s1_tw_cc_vel(1:nlen)/Mtr
 
- !      adj1_tw(1:nlen)= ddtshift_cc *  s1_tw_vel(1:nlen)/Mtr
- !      adj2_tw(1:nlen)= -ddtshift_cc * s2_tw_vel(1:nlen)/Mtr
 
     ! reverse window and taper again 
  call cc_window_inverse(adj1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)

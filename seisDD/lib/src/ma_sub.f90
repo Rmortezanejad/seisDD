@@ -1155,7 +1155,7 @@ subroutine time_costaper(dat,syn,npts,istart,iend)
   real(kind=CUSTOM_REAL), dimension(*), intent(out) :: dat,syn
 
  integer :: B1,B2,B3,B4,nlen_taper
- integer i, n_width_left,n_width_right,nlen,ipwr_t
+ integer i, n_width_left,n_width_right,nlen
  real(kind=CUSTOM_REAL) :: fac
 
   ! set the number of points corresponding to the taper width
@@ -1171,7 +1171,6 @@ subroutine time_costaper(dat,syn,npts,istart,iend)
 
   ! left side
    nlen=2*n_width_left
-   ipwr_t=1
     do i = 1,n_width_left
       !fac = 1.                                         ! boxcar window
       !fac = 1 - sfac1*((i-1) - real(nlen)/2.)**2       ! welch window
@@ -1182,7 +1181,6 @@ subroutine time_costaper(dat,syn,npts,istart,iend)
 
   ! right side
    nlen=2*n_width_right
-   ipwr_t=1
     do i = 1,n_width_right
       !fac = 1.                                         ! boxcar window
       !fac = 1 - sfac1*((i-1) - real(nlen)/2.)**2       ! welch window
@@ -1213,7 +1211,7 @@ end subroutine time_costaper
     real(kind=CUSTOM_REAL), dimension(*), intent(out) :: dat_win
 
     integer ::  i, j
-    real(kind=CUSTOM_REAL) :: sfac1, ipwr_t, fac
+    real(kind=CUSTOM_REAL) :: sfac1,  fac
 
     !print*
     !print*,'window with corrections: isfhit = ', ishift, ' dlnA = ',dlnA,&
@@ -1223,7 +1221,6 @@ end subroutine time_costaper
 
     ! some constants
     sfac1 = (2./real(nlen))**2   ! for Welch window
-    ipwr_t = 50                  ! for time-domain cosine taper
 
     ! initialization
       dat_win(1:npts) = 0.d0
@@ -1260,7 +1257,7 @@ end subroutine time_costaper
     real(kind=CUSTOM_REAL), dimension(*), intent(out) :: dat
 
     integer ::  i, j, nlen
-    real :: sfac1, ipwr_t, fac
+    real :: sfac1, fac
 
   !  print*
   !  print*,'window with corrections: isfhit = ', ishift, ' dlnA = ',dlnA
@@ -1269,7 +1266,6 @@ end subroutine time_costaper
 
     ! some constants
     sfac1 = (2./real(nlen))**2   ! for Welch window
-    ipwr_t = 10                  ! for time-domain cosine taper: 1 -
 
     ! initialization
       dat(1:npts) = 0.d0
