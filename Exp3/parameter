@@ -4,15 +4,14 @@
 Job_title='GJI-2016-E3'
 system='slurm'  # slurm, lsf or pbs
 queue='tiger'   #serial,tiger(princeton) LAURE_USERS(Total), rdhpc(Total) ...
-max_ntasks_per_node=16 # max ntasks-per-node
-GPU_MODE=false
-job='inversion' # modeling,kernel,inversion
-solver='specfem2D' # specfem2D, specfem3D
+max_nproc_per_node=16 # max number of processors per node
 ntasks=1
 NPROC_SPECFEM=4
 WallTime=100
-SPECFEM_time=10
 compiler='ifort'
+GPU_MODE=false
+job='inversion' # modeling,kernel,inversion
+solver='specfem2D' # specfem2D, specfem3D
 
 ReStart=true   # true--Relaunch all files; false--Start from current status
 
@@ -29,7 +28,7 @@ DATA_DIR='/tigress/yanhuay/seisDD/Exp3/data'
 isotropy=true
 attenuation=false
 anisotropy=false
-target_velocity_dir='/tigress/yanhuay/seisDD/Exp3/model_true_legacy'
+target_velocity_dir=''
 target_attenuation_file=''
 target_anisotropy_file=''
 initial_velocity_dir='/tigress/yanhuay/seisDD/Exp3/model_init_bin'

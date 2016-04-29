@@ -1,25 +1,28 @@
 #!/bin/bash
-#SBATCH --error=job_info/error
-#SBATCH --output=job_info/output
-
 
 ulimit -s unlimited
 
-cd $SLURM_SUBMIT_DIR
-
-echo "$SLURM_JOB_NODELIST"  >  ./job_info/NodeList
-echo "$SLURM_JOB_ID"  >  ./job_info/JobID
+source parameter
 export user=$(whoami)
 
+if [ $system == 'slurm' ]; then
+    # Submit directory
+    export SUBMIT_DIR=$SLURM_SUBMIT_DIR
+    echo "$SLURM_JOB_NODELIST"  >  ./job_info/NodeList
+    echo "$SLURM_JOBID"  >  ./job_info/JobID
+elif [ $system == 'pbs' ]; then
+    # Submit directory
+    export SUBMIT_DIR=$PBS_O_WORKDIR
+    echo "$PBS_NODEFILE"  >  ./job_info/NodeList
+    echo "$PBS_JOBID"  >  ./job_info/JobID
+fi
+cd $SUBMIT_DIR
 #################### input parameters ###################################################
-source parameter
-
 # directories
-export SUBMIT_DIR=$SLURM_SUBMIT_DIR
 export SCRIPTS_DIR="$package_path/scripts" 
-export WORKING_DIR="$SLURM_SUBMIT_DIR/$Job_title/specfem/"  # directory on local nodes, where specfem runs
-export DISK_DIR="$SLURM_SUBMIT_DIR/$Job_title/output/"      # temporary directory for data/model/gradient ...
-export SUBMIT_RESULT="$SLURM_SUBMIT_DIR/RESULTS/Kernel/Scale${Wscale}_${measurement_list}_${misfit_type_list}"     # final results
+export WORKING_DIR="$SUBMIT_DIR/$Job_title/specfem/"  # directory on local nodes, where specfem runs
+export DISK_DIR="$SUBMIT_DIR/$Job_title/output/"      # temporary directory for data/model/gradient ...
+export SUBMIT_RESULT="$SUBMIT_DIR/RESULTS/$job/Scale${Wscale}_${measurement_list}_${misfit_type_list}"     # final results
 
 echo 
 echo "Submit job << $Job_title >> in : $SUBMIT_DIR  "
@@ -51,7 +54,11 @@ fi
 echo 
 echo "prepare data ..."
 velocity_dir=$target_velocity_dir
-srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
+if [ $system == 'slurm' ]; then
+    srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
+elif [ $system == 'pbs' ]; then 
+    pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
+fi
 
 echo
 echo "prepare starting model ..."
@@ -61,7 +68,7 @@ cp -r $initial_velocity_dir    $DISK_DIR/m_current
 
 echo
 echo "********************************************************************************************************"
-echo "       Welcome Kernel Construction " 
+echo "       Welcome $job Construction " 
 echo "       Scale: '$Wscale' mode: '$mode' measurement: '${measurement_list}' misfit_type: '${misfit_type_list}' " 
 echo "********************************************************************************************************"
 echo
@@ -69,8 +76,11 @@ echo
 echo "Forward/Adjoint simulation for current model ...... "
 velocity_dir=$DISK_DIR/m_current
 compute_adjoint=true
-srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_current
-
+if [ $system == 'slurm' ]; then
+    srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_current
+elif [ $system == 'pbs' ]; then
+    pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_current
+fi
 echo 
 echo "sum event kernel ...... "
 mkdir -p $DISK_DIR/misfit_kernel
@@ -80,8 +90,7 @@ mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_list $WORKI
 if $smooth ; then
 echo 
 echo "smooth misfit kernel ... "
-if [ $solver == 'specfem3D' ]; 
-then
+if [ $solver == 'specfem3D' ]; then 
    rm -rf OUTPUT_FILES 
    mkdir OUTPUT_FILES
    mkdir OUTPUT_FILES/DATABASES_MPI

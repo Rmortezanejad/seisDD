@@ -1,24 +1,28 @@
 #!/bin/bash
-#SBATCH --error=job_info/error
-#SBATCH --output=job_info/output
 
 ulimit -s unlimited
 
-cd $SLURM_SUBMIT_DIR
-
-echo "$SLURM_JOB_NODELIST"  >  ./job_info/NodeList
-echo "$SLURM_JOB_ID"  >  ./job_info/JobID
+source parameter
 export user=$(whoami)
 
+if [ $system == 'slurm' ]; then
+    # Submit directory
+    export SUBMIT_DIR=$SLURM_SUBMIT_DIR
+    echo "$SLURM_JOB_NODELIST"  >  ./job_info/NodeList
+    echo "$SLURM_JOBID"  >  ./job_info/JobID
+elif [ $system == 'pbs' ]; then
+    # Submit directory
+    export SUBMIT_DIR=$PBS_O_WORKDIR
+    echo "$PBS_NODEFILE"  >  ./job_info/NodeList
+    echo "$PBS_JOBID"  >  ./job_info/JobID
+fi
+cd $SUBMIT_DIR
 #################### input parameters ###################################################
-source parameter
-
 # directories
-export SUBMIT_DIR=$SLURM_SUBMIT_DIR
-export SCRIPTS_DIR="$package_path/scripts" 
-export WORKING_DIR="$working_path/$Job_title"    # directory on local nodes, where specfem runs
-export DISK_DIR="$working_path/RESULTS/FWI/$Job_title" # temporary directory for data/model/gradient ...
-export SUBMIT_RESULT="$result_path/FWI/Scale${Wscale}_${measurement_list}_${misfit_type_list}"     # final results
+export SCRIPTS_DIR="$package_path/scripts"
+export WORKING_DIR="$SUBMIT_DIR/$Job_title/specfem/"  # directory on local nodes, where specfem runs
+export DISK_DIR="$SUBMIT_DIR/$Job_title/output/"      # temporary directory for data/model/gradient ...
+export SUBMIT_RESULT="$SUBMIT_DIR/RESULTS/$job/Scale${Wscale}_${measurement_list}_${misfit_type_list}"     # final results
 
 echo 
 echo "Submit job << $Job_title >> in : $SUBMIT_DIR  "
@@ -27,6 +31,7 @@ echo "FINAL results in :  $SUBMIT_RESULT"
 echo 
 
 #########################################################################################
+
 echo
 STARTTIME=$(date +%s)
 echo "start time is :  $(date +"%T")"
@@ -59,7 +64,7 @@ echo
 ### add multi-stage loop
 for (( stage=1;stage<=${multi_stage};stage++ ))
 do
-    export SUBMIT_RESULT_stage="$result_path/FWI/Scale${Wscale}_${measurement_list}_${misfit_type_list}/stage_${stage}"
+    export SUBMIT_RESULT_stage="$result_path/$job/Scale${Wscale}_${measurement_list}_${misfit_type_list}/stage_${stage}"
 
     mkdir -p $SUBMIT_RESULT_stage
 
@@ -75,8 +80,11 @@ do
 
 echo "prepare data ..."
 velocity_dir=$target_velocity_dir
-srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
-
+if [ $system == 'slurm' ]; then
+    srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
+elif [ $system == 'pbs' ]; then
+    pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
+fi
 
 cp -Rf $DISK_DIR/m_current   $SUBMIT_RESULT_stage/m_$(($iter_start-1))
 # iteration loop
@@ -93,8 +101,11 @@ do
 echo "Forward/Adjoint simulation for current model ...... "
 velocity_dir=$DISK_DIR/m_current
 compute_adjoint=true
-srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint $stage 2> ./job_info/error_current_$iter
-
+if [ $system == 'slurm' ]; then
+    srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint $stage 2> ./job_info/error_current_$iter
+elif [ $system == 'pbs' ]; then
+    pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint $stage 2> ./job_info/error_current_$iter
+fi
 
 echo
 echo "sum data misfit ...... "
@@ -162,7 +173,11 @@ echo
 echo "Forward simulation for update model ...... "
 velocity_dir=$DISK_DIR/m_try
 compute_adjoint=false
-srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint $stage 2> ./job_info/error_update_$iter
+if [ $system == 'slurm' ]; then
+    srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint $stage 2> ./job_info/error_update_$iter
+elif [ $system == 'pbs' ]; then
+    pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint $stage 2> ./job_info/error_update_$iter
+fi
 
 echo
 echo "sum data misfit ...... "
@@ -196,7 +211,7 @@ done  # end of line search
 
     if [ $is_brak -eq 1 ]; then
        echo 
-       echo "Terminate all iterations in FWI"
+       echo "Terminate all iterations in $job"
             break
     fi
 
@@ -210,12 +225,12 @@ cp -r  $DISK_DIR/optimizer/m_new.bin $DISK_DIR/optimizer/m_old.bin
 
 
 echo 
-echo "******************finish iteration $iter for ${misfit_type_list} FWI ************"
+echo "******************finish iteration $iter for ${misfit_type_list} $job ************"
 done  # end of iterative updates
 
 
 echo
-echo "******************finish all iterations for ${misfit_type_list} FWI *************"
+echo "******************finish all iterations for ${misfit_type_list} $job *************"
 
 
 cp -r $SUBMIT_DIR/parameter $SUBMIT_RESULT_stage/

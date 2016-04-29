@@ -1,25 +1,28 @@
 #!/bin/bash
-#SBATCH --error=job_info/error
-#SBATCH --output=job_info/output
-
 
 ulimit -s unlimited
 
-cd $SLURM_SUBMIT_DIR
-
-echo "$SLURM_JOB_NODELIST"  >  ./job_info/NodeList
-echo "$SLURM_JOB_ID"  >  ./job_info/JobID
+source parameter
 export user=$(whoami)
 
+if [ $system == 'slurm' ]; then
+    # Submit directory
+    export SUBMIT_DIR=$SLURM_SUBMIT_DIR
+    echo "$SLURM_JOB_NODELIST"  >  ./job_info/NodeList
+    echo "$SLURM_JOBID"  >  ./job_info/JobID
+elif [ $system == 'pbs' ]; then
+    # Submit directory
+    export SUBMIT_DIR=$PBS_O_WORKDIR
+    echo "$PBS_NODEFILE"  >  ./job_info/NodeList
+    echo "$PBS_JOBID"  >  ./job_info/JobID
+fi
+cd $SUBMIT_DIR
 #################### input parameters ###################################################
-source parameter
-
 # directories
-export SUBMIT_DIR=$SLURM_SUBMIT_DIR
 export SCRIPTS_DIR="$package_path/scripts"
-export WORKING_DIR="$SLURM_SUBMIT_DIR/$Job_title/specfem/"  # directory on local nodes, where specfem runs
-export DISK_DIR="$SLURM_SUBMIT_DIR/$Job_title/output/"      # temporary directory for data/model/gradient ...
-export SUBMIT_RESULT="$SLURM_SUBMIT_DIR/RESULTS/Modeling/Scale${Wscale}_${measurement_list}_${misfit_type_list}"     # final results
+export WORKING_DIR="$SUBMIT_DIR/$Job_title/specfem/"  # directory on local nodes, where specfem runs
+export DISK_DIR="$SUBMIT_DIR/$Job_title/output/"      # temporary directory for data/model/gradient ...
+export SUBMIT_RESULT="$SUBMIT_DIR/RESULTS/$job/Scale${Wscale}_${measurement_list}_${misfit_type_list}"     # final results
 
 echo 
 echo "Submit job << $Job_title >> in : $SUBMIT_DIR  "
@@ -51,8 +54,11 @@ fi
 echo 
 echo "prepare data ..."
 velocity_dir=$target_velocity_dir
-srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
-
+if [ $system == 'slurm' ]; then
+    srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
+elif [ $system == 'pbs' ]; then
+    pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
+fi
 ## SAVE
 cp -r $SUBMIT_DIR/job_info/output $SUBMIT_RESULT/
 cp -r $SUBMIT_DIR/parameter $SUBMIT_RESULT/

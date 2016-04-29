@@ -65,7 +65,7 @@
   real(kind=CUSTOM_REAL) :: tmp1, tmp2,tmp3
   double precision :: rho_dummy,vp_dummy,vs_dummy,mu_dummy,lambda_dummy
 
-  if (tomo_material > 0) MODEL = 'tomo'
+   if (tomo_material > 0)  MODEL = 'tomo'
 
   if(trim(MODEL) == 'legacy') then
 
@@ -147,6 +147,12 @@
   else if(trim(MODEL)=='tomo') then
     call define_external_model_from_tomo_file()
   endif
+
+      if(.not. ATTENUATION_VISCOELASTIC_SOLID) then
+          QKappa_attenuationext(:,:,:) = 9999.d0
+          Qmu_attenuationext(:,:,:) = 9999.d0
+      endif
+
 
   if(myrank==0) then
       print*, 'input model type -- ',trim(MODEL) !YY

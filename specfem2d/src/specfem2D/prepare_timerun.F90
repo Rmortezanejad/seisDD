@@ -1223,11 +1223,11 @@ subroutine prepare_timerun_read()
   Mu_nu1(:,:,:) = -1._CUSTOM_REAL
   Mu_nu2(:,:,:) = -1._CUSTOM_REAL
 
-! define the attenuation quality factors.
+  ! define the attenuation quality factors.
 ! they can be different for each element.
 !! DK DK if needed in the future, here the quality factor could be different for each point
-  do ispec = 1,nspec
 
+do ispec = 1,nspec
 !   attenuation is not implemented in acoustic (i.e. fluid) media for now, only in viscoelastic (i.e. solid) media
     if(acoustic(ispec)) cycle
 
@@ -1252,6 +1252,7 @@ subroutine prepare_timerun_read()
       enddo
     enddo
 
+
     if(ATTENUATION_VISCOELASTIC_SOLID .and. READ_VELOCITIES_AT_f0 .and. .not. assign_external_model) then
       if(anisotropic(ispec) .or. poroelastic(ispec) .or. gravitoacoustic(ispec)) &
          stop 'READ_VELOCITIES_AT_f0 only implemented for non anisotropic, non poroelastic, non gravitoacoustic materials for now'
@@ -1271,7 +1272,6 @@ subroutine prepare_timerun_read()
     endif
 
  enddo
-
 ! allocate memory variables for viscous attenuation (poroelastic media)
     if(ATTENUATION_PORO_FLUID_PART) then
       allocate(rx_viscous(NGLLX,NGLLZ,nspec))

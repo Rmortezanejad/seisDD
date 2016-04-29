@@ -72,7 +72,7 @@ make -f make_file
 echo 
 echo " edit request nodes and tasks ..."
    nproc=$NPROC_SPECFEM
-   nodes=$(echo $(echo "$ntasks $nproc" | awk '{ print $1*$2/16 }') | awk '{printf("%d\n",$0+=$0<0?0:0.999)}')
+   nodes=$(echo $(echo "$ntasks $nproc $max_nproc_per_node" | awk '{ print $1*$2/$3 }') | awk '{printf("%d\n",$0+=$0<0?0:0.999)}')
 echo " Request $nodes nodes, $ntasks tasks, $nproc cpus per task "
 
 echo
@@ -80,8 +80,15 @@ echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo
 
 echo "submit job"
-echo "sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc --time=$WallTime  $Job_title.sh"
 echo
+if [ $system == 'slurm' ]; then
+    echo "slurm system ..."
+    echo "sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc --time=$WallTime --error=job_info/error --output=job_info/output $Job_title.sh"
+          sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc --time=$WallTime --error=job_info/error --output=job_info/output $Job_title.sh
 
-sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc --time=$WallTime  $Job_title.sh
+elif [ $system == 'pbs' ]; then
+    echo "pbs system ..."
+    echo
+    qsub -q $queue -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh
+fi
 echo

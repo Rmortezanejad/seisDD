@@ -6,8 +6,12 @@ data_tag='DATA_obs'
 velocity_dir=$1
 SAVE_FORWARD=false
 
-# local id and directory
-iproc=$SLURM_PROCID  # $SLURM_PROCID  #event ID (from 0 to $ntasks-1)
+# local id (from 0 to $ntasks-1)
+if [ $system == 'slurm' ]; then
+        iproc=$SLURM_PROCID  
+elif [ $system == 'pbs' ]; then
+        iproc=$PBS_VNODENUM
+fi
 
 # allocate tasks over all sources
 # ntasks in parallel and nsrc in total

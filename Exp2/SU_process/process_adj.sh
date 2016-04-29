@@ -18,13 +18,12 @@ input_file=$1
 output_file=$2
 cp $input_file in_file
 
+if $SU_process; then
 # convert little endian to XDR or big-endian for SU application
 if [[ $system_endian = "little_endian" ]]; then
         suoldtonew <in_file> out_file
         cp out_file in_file
 fi
-
-if $SU_process; then
 
 ## taper again
 sutaper<in_file tbeg=$taper_t1 tend=$taper_t2 tr1=$taper_x1 tr2=$taper_x2 ntr=$NREC min=0.0 taper=5>out_file
@@ -46,7 +45,6 @@ cp out_file in_file
 sugain <in_file scale=$scale>out_file
 cp out_file in_file
 
-fi # end SU_process
 
 # convert foreign to native/system endian 
 if [[ $system_endian = "little_endian" ]]; then
@@ -54,6 +52,7 @@ if [[ $system_endian = "little_endian" ]]; then
     cp out_file in_file
 fi
 
+fi # end SU_process
 
 ## save final result
 cp in_file $output_file
