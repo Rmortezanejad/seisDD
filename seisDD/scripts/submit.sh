@@ -35,21 +35,21 @@ then
 echo " ########################################################"
 echo " Forward modeling .." 
 echo " ########################################################"
-cp $workflow_DIR/Modeling_$system.sh $Job_title.sh
+cp $workflow_DIR/Modeling.sh $Job_title.sh
 
 elif [ "$job" ==  "kernel" ] || [ "$job" ==  "Kernel" ]
 then
 echo " ########################################################"
 echo " Adjoint Inversion .." 
 echo " ########################################################"
-cp $workflow_DIR/Kernel_$system.sh $Job_title.sh
+cp $workflow_DIR/Kernel.sh $Job_title.sh
 
 elif [ "$job" ==  "inversion" ]
 then
 echo " ########################################################"
 echo " Adjoint Inversion .." 
 echo " ########################################################"
-cp $workflow_DIR/AdjointInversion_$system.sh $Job_title.sh
+cp $workflow_DIR/AdjointInversion.sh $Job_title.sh
 fi
 
 echo

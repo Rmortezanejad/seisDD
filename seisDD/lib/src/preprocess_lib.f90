@@ -82,7 +82,7 @@ end subroutine preprocess
     real(kind=CUSTOM_REAL), dimension(*), intent(out) :: win
 
     integer ::  i, nlen
-    real(kind=CUSTOM_REAL) :: sfac1, ipwr_t
+    real(kind=CUSTOM_REAL) :: sfac1
     real(kind=CUSTOM_REAL), dimension(npts) :: fac
 
 
@@ -90,7 +90,6 @@ end subroutine preprocess
 
     ! some constants
     sfac1 = (2./real(nlen))**2   ! for Welch taper
-    ipwr_t = 10                ! for time-domain cosine taper (10-20%)
 
     ! initialization
       win(1:npts) = 0.d0

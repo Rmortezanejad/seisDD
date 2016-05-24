@@ -76,7 +76,7 @@ integer, parameter :: CUSTOM_COMPLEX = 2*SIZE_REAL
   logical :: USE_ERROR_MT = .false.
   ! taper power 
   integer :: ipwr_w = 10
-   real(kind=CUSTOM_REAL), parameter :: ipwr_t = 10 ! for time-domain cosine taper 
+  real(kind=CUSTOM_REAL), parameter :: ipwr_t = 10 ! for time-domain cosine taper 
   ! CG orhtogonality threshold for conscutive gradients
   real(kind=CUSTOM_REAL), parameter :: CG_threshold = 0.1
 
@@ -95,7 +95,7 @@ integer, parameter :: CUSTOM_COMPLEX = 2*SIZE_REAL
 
   ! Display 
   logical :: DISPLAY_DETAILS = .false.
-  character(len=500) :: output_dir='OUTPUT_FILES/'
+  character(len=500) :: output_dir='OUTPUT_FILES'
   ! -------------------------------------------------------------
 
 end module constants
