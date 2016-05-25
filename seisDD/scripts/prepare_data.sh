@@ -47,7 +47,7 @@ do
     echo "iproc = $iproc, isource = $isource"
    fi
 
-   if  $ExistDATA ; then
+   if  $ExistDATA && [ -d "$DATA_DIR" ]; then
      sh $SCRIPTS_DIR/copy_data.sh $isource $data_tag $data_list $WORKING_DIR $DISK_DIR $DATA_DIR
    else
      sh $SCRIPTS_DIR/Forward_${solver}.sh $isource $NPROC_SPECFEM $data_tag $data_list \

@@ -27,4 +27,8 @@ cd Exp3
 ./run_this_example.sh
 cd submit_job
 ./submit.sh
- 
+
+cd Exp4
+./run_this_example.sh
+cd submit_job
+./submit.sh 
