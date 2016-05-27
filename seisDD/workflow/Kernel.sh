@@ -68,8 +68,8 @@ cp -r $initial_velocity_dir    $DISK_DIR/m_current
 
 echo
 echo "********************************************************************************************************"
-echo "       Welcome $job Construction " 
-echo "       Scale: '$Wscale' mode: '$mode' measurement: '${measurement_list}' misfit_type: '${misfit_type_list}' " 
+echo "       Welcome job << $job >> " 
+echo "       Scale: '$Wscale'; measurement: '${measurement_list}'; misfit_type: '${misfit_type_list}' " 
 echo "********************************************************************************************************"
 echo
 

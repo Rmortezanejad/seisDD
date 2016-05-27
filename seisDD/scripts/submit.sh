@@ -83,8 +83,8 @@ echo "submit job"
 echo
 if [ $system == 'slurm' ]; then
     echo "slurm system ..."
-    echo "sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc --time=$WallTime --error=job_info/error --output=job_info/output $Job_title.sh"
-          sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc --time=$WallTime --error=job_info/error --output=job_info/output $Job_title.sh
+    echo "sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh"
+          sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh
 
 elif [ $system == 'pbs' ]; then
     echo "pbs system ..."

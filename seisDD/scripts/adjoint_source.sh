@@ -12,7 +12,7 @@ Wscale=$9
 wavelet_path=${10}
 
 if [ $isource -eq 1 ]; then
-echo "Adjoint source ..."
+echo "adjoint source ..."
 echo "NPROC_SPECFEM=$NPROC_SPECFEM"
 echo "compute_adjoint=$compute_adjoint"
 echo "data_list=$data_list"

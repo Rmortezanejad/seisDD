@@ -56,7 +56,12 @@ fi
    sed -e "s#^LOGICAL :: sensitivity=.*#LOGICAL :: sensitivity=.$sensitivity.#g"  $FILE > temp;  mv temp $FILE 
    sed -e "s#^CHARACTER (LEN=20) :: solver=.*#CHARACTER (LEN=20) :: solver='$solver'#g"  $FILE > temp;  mv temp $FILE
    sed -e "s#^real(kind=CUSTOM_REAL), PARAMETER :: cc_threshold=.*#real(kind=CUSTOM_REAL), PARAMETER :: cc_threshold=${cc_threshold} #g"  $FILE > temp;  mv temp $FILE
-
+   if [ ! -z "$DD_min" ]; then
+       sed -e "s#^REAL(kind=CUSTOM_REAL), PARAMETER :: DD_min=.*#REAL(kind=CUSTOM_REAL), PARAMETER :: DD_min=${DD_min} #g"  $FILE > temp;  mv temp $FILE
+   fi
+   if [ ! -z "$DD_max" ]; then
+       sed -e "s#^REAL(kind=CUSTOM_REAL), PARAMETER :: DD_max=.*#REAL(kind=CUSTOM_REAL), PARAMETER :: DD_max=${DD_max} #g"  $FILE > temp;  mv temp $FILE
+   fi
 
    # INVERSION
    sed -e "s#^CHARACTER (LEN=2) :: opt_scheme=.*#CHARACTER (LEN=2) :: opt_scheme='$opt_scheme'#g"  $FILE > temp;  mv temp $FILE

@@ -73,7 +73,9 @@ LOGICAL :: sensitivity=.false.
 CHARACTER (LEN=20) :: solver='specfem2D'
 character(len=MAX_STRING_LEN) :: measurement_list
 character(len=MAX_STRING_LEN) :: misfit_type_list
-real(kind=CUSTOM_REAL), PARAMETER :: cc_threshold=0.9 
+real(kind=CUSTOM_REAL), PARAMETER :: cc_threshold=0.9
+REAL(kind=CUSTOM_REAL), PARAMETER :: DD_min=tiny(0.0)
+REAL(kind=CUSTOM_REAL), PARAMETER :: DD_max=huge(0.0)
 real(kind=CUSTOM_REAL) :: ratio_data_syn=0.01
 
 ! ! INVERSION
@@ -104,6 +106,7 @@ LOGICAL :: smooth=.true.
   real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: seism_obs
   real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: seism_syn
   real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: seism_adj
+  real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: seism_adj_AD
   real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: seism_adj_DD
   real(kind=CUSTOM_REAL), dimension(:),allocatable :: st_xval,st_yval,st_zval
   real(kind=CUSTOM_REAL) :: x_source,y_source,z_source
@@ -122,7 +125,7 @@ integer :: stf_len
   integer :: num_AD, num_DD
   integer, dimension(:,:), allocatable :: is_pair
   real(kind=CUSTOM_REAL), dimension(:),allocatable :: misfit_proc
-  real(kind=CUSTOM_REAL) ::misfit_AD,misfit_DD, misfit
+  real(kind=CUSTOM_REAL) :: misfit_AD,misfit_DD, misfit
   real(kind=CUSTOM_REAL) :: misfit_ratio_initial=0.001
   real(kind=CUSTOM_REAL) :: misfit_ratio_previous=0.01
 

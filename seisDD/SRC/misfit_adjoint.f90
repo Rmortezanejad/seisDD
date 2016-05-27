@@ -126,25 +126,29 @@ myrank = 0
           case("AD") 
               call Absolute_diff()
           case("DD")
-              call Relative_diff(input_dir,adjustl(data_names(icomp)))  
+              call Relative_diff(input_dir,adjustl(data_names(icomp))) 
           end select  ! select
           enddo ! itype
 
-          ! misfit
-          misfit=misfit+ (misfit_AD + misfit_DD) * 0.5
 
-          if(compute_adjoint .and. DISPLAY_DETAILS) then
-              print*, trim(adjustl(data_names(icomp))), ': total number of AD measurements :', &
+          if(compute_adjoint .and. myrank==0) then
+              print*, trim(adjustl(data_names(icomp))), &
+                  ': total number of AD measurements :', &
                   num_AD, num_AD*100.0/nrec_proc,'%'
-              if (nrec_proc>1) then 
-                  print*, trim(adjustl(data_names(icomp))), ': total number of DD measurements :', &
+              if (nrec_proc>1) then
+                  print*, trim(adjustl(data_names(icomp))), &
+                      ': total number of DD measurements :', &
                       num_DD, num_DD*100.0/(nrec_proc*(nrec_proc-1)/2),'%'
               endif
           endif
 
+
+          ! misfit
+          misfit=misfit+ misfit_AD/max(num_AD,1) + misfit_DD/max(num_DD,1)
+
           ! adjoint
           if(compute_adjoint) then 
-              seism_adj = seism_adj + seism_adj_DD
+              seism_adj = seism_adj_AD/max(num_AD,1) + seism_adj_DD/max(num_DD,1)
           endif
 
           call finalize(input_dir,adjustl(data_names(icomp)))
@@ -158,7 +162,8 @@ myrank = 0
   ! step 5 -- save misfit
   write(filename,'(a,i6.6,a)') &
       trim(input_dir)//'/proc',myrank,'_misfit.dat'
-  if(DISPLAY_DETAILS .and. compute_adjoint .and. nrec_proc>0) print*,'SAVE misfit -- ',trim(filename)
+  if(DISPLAY_DETAILS .and. compute_adjoint .and. nrec_proc>0) &
+      print*,'SAVE misfit -- ',trim(filename)
   OPEN (IOUT, FILE=trim(filename),status='unknown',iostat = ier)
   if(ier/=0) then
       print*,'Error opening data misfit file: ',trim(filename)
@@ -169,12 +174,14 @@ myrank = 0
   close(IOUT)
 
   if(DISPLAY_DETAILS .and. compute_adjoint .and. nrec_proc>0) then
-      print*,'myrank=',myrank,' ', trim(misfit_type_list),'_', trim(measurement_list), ' misfit= ',misfit
+      print*,'myrank=',myrank,' final misfit_',trim(measurement_list), &
+          '_',trim(misfit_type_list), '= ',misfit
   endif
  
   call cpu_time(t2)
 
-  if(DISPLAY_DETAILS .and. compute_adjoint .and. myrank==0)  print *,'Computation time with CPU:',t2-t1
+  if(DISPLAY_DETAILS .and. compute_adjoint .and. myrank==0) &
+      print *,'Computation time with CPU:',t2-t1
 
   #ifdef USE_MPI
   ! stop all the processes and exit
@@ -253,6 +260,7 @@ if(ex_obs .and. ex_syn) then ! exist
 allocate(seism_obs(NSTEP,nrec_proc))
 allocate(seism_syn(NSTEP,nrec_proc))
 allocate(seism_adj(NSTEP,nrec_proc))
+allocate(seism_adj_AD(NSTEP,nrec_proc))
 allocate(seism_adj_DD(NSTEP,nrec_proc))
 allocate(st_xval(nrec_proc))
 allocate(st_yval(nrec_proc))
@@ -264,6 +272,7 @@ allocate(win_end(nrec_proc))
   seism_obs = 0.0_CUSTOM_REAL
   seism_syn = 0.0_CUSTOM_REAL
   seism_adj = 0.0_CUSTOM_REAL
+  seism_adj_AD = 0.0_CUSTOM_REAL
   seism_adj_DD = 0.0_CUSTOM_REAL
   win_start=NSTEP
   win_end=1
@@ -273,12 +282,12 @@ allocate(win_end(nrec_proc))
    call readSU(filename_obs,seism_obs)
    call readSU(filename_syn,seism_syn)
 
-   if(DISPLAY_DETAILS) &
+   if(DISPLAY_DETAILS) then
        print*,'Min / Max of seism_obs : ',&
-       minval(seism_obs(:,:)),maxval(seism_obs(:,:))
-   if(DISPLAY_DETAILS) &
+           minval(seism_obs(:,:)),maxval(seism_obs(:,:))
        print*,'Min / Max of seism_syn : ',&
-       minval(seism_syn(:,:)),maxval(seism_syn(:,:))
+           minval(seism_syn(:,:)),maxval(seism_syn(:,:))
+   endif
 
 endif ! exist
 
@@ -543,7 +552,7 @@ use seismo_parameters
       endif
 
      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-       if(DISPLAY_DETAILS .and. compute_adjoint .and. irec<=10) then
+       if(DISPLAY_DETAILS .and. compute_adjoint) then
                   print*
                   print*,'irec=',irec
                   print*,'window -- ',ntstart,ntend
@@ -560,7 +569,7 @@ use seismo_parameters
               deltat,f0,ntstart,ntend,&
               window_type,compute_adjoint, &
               misfit_value,adj) 
-          if(DISPLAY_DETAILS .and. compute_adjoint .and. irec<=10) then
+          if(DISPLAY_DETAILS .and. compute_adjoint) then
               print*,'misfit_',trim(measurement_type),'_AD=',misfit_value
           endif
 
@@ -573,11 +582,13 @@ use seismo_parameters
           if (ntype>=1) then 
           ! window sum 
            misfit_AD = misfit_AD + misfit_trace / ntype
-           if(compute_adjoint .and. irec<=10) then 
+           if(compute_adjoint) then 
                call process_adj(adj_trace,ntstart,ntend,dis_sr)
+
                if(DISPLAY_DETAILS) print*, 'Min/Max of adj', &
                    minval(adj_trace(:)),maxval(adj_trace(:))
-               seism_adj(:,irec) = seism_adj(:,irec) + adj_trace(:) / ntype
+
+               seism_adj_AD(:,irec) = seism_adj_AD(:,irec) + adj_trace(:) / ntype
            endif
            num_AD = num_AD +1
        endif
@@ -599,7 +610,7 @@ use seismo_parameters
   real(kind=CUSTOM_REAL) :: seism(NSTEP,nrec_proc)
   real(kind=CUSTOM_REAL) :: d(NSTEP),s(NSTEP),adj(NSTEP),adj_pair(NSTEP)
   real(kind=CUSTOM_REAL) :: d_ref(NSTEP),s_ref(NSTEP),adj_ref(NSTEP),adj_ref_pair(NSTEP)
-  real(kind=CUSTOM_REAL) :: dis_sr1, dis_sr2
+  real(kind=CUSTOM_REAL) :: dis_sr1, dis_sr2, dis_rr
   real(kind=CUSTOM_REAL) :: cc_max_obs
   real(kind=CUSTOM_REAL) :: misfit_value,misfit_pair
   integer :: ntstart,ntend,nlen
@@ -654,10 +665,6 @@ use seismo_parameters
           d_ref(:)=seism_obs(:,jrec)
           s_ref(:)=seism_syn(:,jrec)
 
-          dis_sr2=sqrt((st_xval(jrec)-x_source)**2 &
-              +(st_yval(jrec)-y_source)**2 &
-              +(st_zval(jrec)-z_source)**2)
-
           ! window info
           ntstart_ref = win_start(jrec)
           ntend_ref= win_end(jrec)
@@ -666,19 +673,24 @@ use seismo_parameters
 
           if(norm2(d_ref(ntstart_ref:ntend_ref),1)<SMALL_VAL .or. &
               norm2(s_ref(ntstart_ref:ntend_ref),1)<SMALL_VAL) cycle  ! zero reference trace
+
           if(.not. ex) then
+              cc_max_obs=0.0
+              dis_rr=sqrt((st_xval(jrec)-st_xval(irec))**2 &
+                  +(st_yval(jrec)-st_yval(irec))**2 &
+                  +(st_zval(jrec)-st_zval(irec))**2)
+              if(dis_rr<=DD_max .and. dis_rr>=DD_min)&
                   call CC_similarity(d,d_ref,NSTEP,&
-                      ntstart,ntend,ntstart_ref,ntend_ref,window_type,cc_max_obs)
-                  if(cc_max_obs>CC_threshold) then
-                      is_pair(irec,jrec) = 1
-                  endif !! cc_max_obs
+                  ntstart,ntend,ntstart_ref,ntend_ref,window_type,cc_max_obs)
+              if(cc_max_obs>CC_threshold)  is_pair(irec,jrec) = 1
            endif !! ex
         
         
-              if(DISPLAY_DETAILS .and. compute_adjoint .and. jrec==irec+1) then
+              if(DISPLAY_DETAILS .and. compute_adjoint) then
                   print*      
                   print*,'pair irec=',irec, 'jrec=',jrec           
                   print*,'window -- ',ntstart,ntend,ntstart_ref,ntend_ref
+                  print*, 'rr distance dis_rr, DD_min/DD_max: ',dis_rr, DD_min, DD_max 
                   print*, 'cc similarity -- ', cc_max_obs 
                   print*,'is_pair : ',is_pair(irec,jrec)
               endif 
@@ -689,6 +701,10 @@ use seismo_parameters
                   misfit_pair = 0.0
                   adj_pair = 0.0
                   adj_ref_pair = 0.0
+                  
+                  dis_sr2=sqrt((st_xval(jrec)-x_source)**2 &
+                      +(st_yval(jrec)-y_source)**2 &
+                      +(st_zval(jrec)-z_source)**2)
 
                   ! number of double difference measurements
                   num_DD = num_DD+1
@@ -704,10 +720,8 @@ use seismo_parameters
                   call misfit_adj_DD(measurement_type,d,d_ref,s,s_ref,NSTEP,deltat,f0,&
                       ntstart,ntend,ntstart_ref,ntend_ref,window_type,compute_adjoint,&
                       misfit_value,adj,adj_ref)
-                  if(DISPLAY_DETAILS .and. compute_adjoint .and. jrec==irec+1) then
+                  if(DISPLAY_DETAILS .and. compute_adjoint) then
                       print*,'misfit_',trim(measurement_type),'_DD=',misfit_value
-                      print*, 'Min/Max of adj:',maxval(adj(:)),minval(adj(:))
-                      print*, 'Min/Max of adj_ref:',maxval(adj_ref(:)),minval(adj_ref(:))
                   endif
                 
                   ! sum over itype of misfit and adjoint
@@ -728,9 +742,9 @@ use seismo_parameters
                      call process_adj(adj_pair,ntstart,ntend,dis_sr1)
                      call process_adj(adj_ref_pair,ntstart_ref,ntend_ref,dis_sr2)
 
-                      if(DISPLAY_DETAILS .and. jrec==irec+1) then
-                          print*, 'Min/Max of adj :',maxval(adj_pair(:)),minval(adj_pair(:))
-                          print*, 'Min/Max of adj_ref:',maxval(adj_ref_pair(:)),minval(adj_ref_pair(:))
+                      if(DISPLAY_DETAILS) then
+                          print*, 'Min/Max of adj :',minval(adj_pair(:)),maxval(adj_pair(:))
+                          print*, 'Min/Max of adj_ref:',minval(adj_ref_pair(:)),maxval(adj_ref_pair(:))
                       endif
 
                       ! sum of adjoint source over pair
@@ -795,7 +809,7 @@ end select
           trim(directory)//'/SEM/'//trim(filen)
    if(DISPLAY_DETAILS) then
       print*,'SAVE seism_adj -- ',trim(filename)
-    if(DISPLAY_DETAILS) print*,'Min / Max of seism_adj : ',&
+    if(DISPLAY_DETAILS) print*,'Min / Max of final seism_adj : ',&
        minval(seism_adj(:,:)),maxval(seism_adj(:,:))
    endif
 
@@ -806,6 +820,7 @@ endif
 deallocate(seism_obs)
 deallocate(seism_syn)
 deallocate(seism_adj)
+deallocate(seism_adj_AD)
 deallocate(seism_adj_DD)
 deallocate(st_xval)
 deallocate(st_yval)
@@ -841,10 +856,9 @@ use seismo_parameters
       st_xval(irec)=r4head(21) ! Receiver x coord (gx)
       st_yval(irec)=r4head(22) ! Receiver y coord (gy)
      ! header2=int(r4head(29), kind=2)
-     ! if (DISPLAY_DETAILS .and. myrank==0) print*,'header : ',r4head
-      if (DISPLAY_DETAILS) print *, 'xs,ys,zs',&
+      if (DISPLAY_DETAILS .and. irec==1) print *, 'xs,ys,zs',&
               x_source,y_source,z_source
-      if (DISPLAY_DETAILS) print *, 'xr,yr,zr',&
+      if (DISPLAY_DETAILS .and. irec==1) print *, 'xr,yr,zr',&
               st_xval(irec),st_yval(irec),st_zval(irec)
 
    enddo

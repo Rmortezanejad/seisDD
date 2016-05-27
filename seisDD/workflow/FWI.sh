@@ -57,7 +57,7 @@ fi
 echo
 echo "********************************************************************************************************"
 echo "       Welcome Full-Waveform-Inversion "
-echo "       Scale: '$Wscale' measurement: '${measurement_list}' misfit_type: '${misfit_type_list}' " 
+echo "       Scale: '$Wscale'; measurement: '${measurement_list}'; misfit_type: '${misfit_type_list}' " 
 echo "********************************************************************************************************"
 echo
 
