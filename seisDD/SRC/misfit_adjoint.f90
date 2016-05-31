@@ -23,10 +23,6 @@ implicit none
   character(len=MAX_STRING_LEN) :: input_dir
   character(len=MAX_FILENAME_LEN) :: filename
 
-  character(len=MAX_STRING_LEN) :: misfit_types(MAX_MISFIT_TYPE)
-  character(len=2) :: misfit_type
-  integer :: itype, ntype
-
   real t1,t2
 
 #ifdef USE_MPI
@@ -67,10 +63,6 @@ myrank = 0
 
   !! gloabl initialization
   misfit=0.0_CUSTOM_REAL
-
-  call split_string(misfit_type_list,'+',misfit_types,ntype)
-
-  if(ntype>=1) then
 
       ! loop over comp
       do icomp=1,ndata
@@ -119,28 +111,31 @@ myrank = 0
           misfit_AD=0.0_CUSTOM_REAL
           misfit_DD=0.0_CUSTOM_REAL
 
-          do itype=1,ntype
-          misfit_type=trim(misfit_types(itype))
+        ! absolute mwasurement  
+        if(index(misfit_type_list,'AD')>0) then 
+            call Absolute_diff()
 
-          select case(trim(misfit_type))
-          case("AD") 
-              call Absolute_diff()
-          case("DD")
-              call Relative_diff(input_dir,adjustl(data_names(icomp))) 
-          end select  ! select
-          enddo ! itype
+            if(compute_adjoint .and. myrank==0) then
+               print*, 'summed suqared misfit_',trim(measurement_list),&
+                   '_AD=',misfit_AD  
+               print*, trim(adjustl(data_names(icomp))), &
+                ': total number of AD measurements :', &
+                num_AD, num_AD*100.0/nrec_proc,'%'
+        endif
+    endif
 
+        ! differential measurement
+        if (nrec_proc>1 .and. index(misfit_type_list,'DD')>0) then
+            call Relative_diff(input_dir,adjustl(data_names(icomp)))
 
-          if(compute_adjoint .and. myrank==0) then
-              print*, trim(adjustl(data_names(icomp))), &
-                  ': total number of AD measurements :', &
-                  num_AD, num_AD*100.0/nrec_proc,'%'
-              if (nrec_proc>1) then
-                  print*, trim(adjustl(data_names(icomp))), &
-                      ': total number of DD measurements :', &
-                      num_DD, num_DD*100.0/(nrec_proc*(nrec_proc-1)/2),'%'
-              endif
-          endif
+            if(compute_adjoint .and. myrank==0) then
+                print*, 'summed suqared misfit_',trim(measurement_list),&
+                    '_DD=',misfit_DD
+                print*, trim(adjustl(data_names(icomp))), &
+                ': total number of DD measurements :', &
+                num_DD, num_DD*100.0/(nrec_proc*(nrec_proc-1)/2),'%'
+        endif
+    endif
 
 
           ! misfit
@@ -156,8 +151,6 @@ myrank = 0
       endif ! nrec_proc>0
 
       enddo ! icomp
-
-  endif ! ntype>=1
 
   ! step 5 -- save misfit
   write(filename,'(a,i6.6,a)') &
