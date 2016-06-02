@@ -50,7 +50,7 @@ NSRC=1
 ######################################### Adjoint/Inversion information ############################################### 
 # measurement type (CC WD ET ED IP MT MA) 
 measurement_list=CC
-# misfit_type (AD, DD, HB)
+# misfit_type (AD, DD, AD+DD)
 misfit_type_list=DD
 # similarity threshold for DD 
 cc_threshold=0.90

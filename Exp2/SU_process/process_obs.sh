@@ -2,6 +2,10 @@
 ## data pre-processing work flow(cut, tapering, filtering, resample, taper .... )
 source ./SU_process/process_par
 
+# shift 
+tshift=0.0 #-1.0 for Experiment IIC
+# dt in microseconds
+dt=$(echo $deltat*1000000 | bc -l )
 ## cut
 tmin=0
 tmax=$(echo $(echo "$deltat $NSTEP" | awk '{ print $1*($2-1) }'))
@@ -18,13 +22,15 @@ input_file=$1
 output_file=$2
 cp $input_file in_file
 
-if $SU_process; then
 # convert little endian to XDR or big-endian for SU application
-if [[ $system_endian = "little_endian" ]]; then
-        suoldtonew <in_file> out_file
-        cp out_file in_file
+if [[ $(echo " $tshift != 0.0" | bc -l ) == 1 ]]   || $SU_process && [[ $system_endian = "little_endian" ]] ; then
+    suoldtonew <in_file> out_file
+    cp out_file in_file
+    sushift<in_file tmin=$tshift dt=$dt  |suchw key1=delrt a=0 >out_file
+    cp out_file in_file
 fi
 
+if $SU_process; then
 ## cut function 
 suwind<in_file  tmin=$tmin tmax=$tmax >out_file
 cp out_file in_file
@@ -45,13 +51,13 @@ cp out_file in_file
 sutaper<in_file tbeg=$taper_t1 tend=$taper_t2 tr1=$taper_x1 tr2=$taper_x2 ntr=$NREC min=0.0 taper=5>out_file
 cp out_file in_file
 
-# convert foreign to native/system endian 
-if [[ $system_endian = "little_endian" ]]; then
+fi # end SU_process
+
+# convert foreign to native/system endian
+if [[ $(echo " $tshift != 0.0" | bc -l ) == 1 ]]   || $SU_process && [[ $system_endian = "little_endian" ]] ; then
     suswapbytes <in_file format=0 ns=$NSTEP >out_file
     cp out_file in_file
 fi
-
-fi # end SU_process
 
 ## save final result
 cp in_file $output_file
