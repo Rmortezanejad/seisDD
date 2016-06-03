@@ -74,7 +74,7 @@ BFGS_STEPMAX=4
 
 # iteration limit
 iter_start=1
-iter_end=20
+iter_end=1
 # line search method 
 backtracking=false
 # line search step length
