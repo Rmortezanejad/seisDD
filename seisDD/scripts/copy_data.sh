@@ -11,13 +11,12 @@ ISRC_WORKING_DIR=$( seq --format="$WORKING_DIR/%06.f/" $(($isource-1)) $(($isour
 
 ISRC_DATA_DIR=$( seq --format="$DISK_DIR/%06.f/" $(($isource-1)) $(($isource-1)) )/$data_tag
 
-
 mkdir -p $ISRC_WORKING_DIR $ISRC_DATA_DIR
 
 cd $ISRC_WORKING_DIR
 
 if [ $isource -eq 1 ]; then
- echo "copy data from $DATA_DIR"
+    echo "copy data from $DATA_DIR"
 fi
 # Source location
 DATA_DIR=$( seq --format="$DATA_DIR/%06.f/" $(($isource-1)) $(($isource-1)) )

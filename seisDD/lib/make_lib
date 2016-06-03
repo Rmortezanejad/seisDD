@@ -11,7 +11,7 @@ LIBSRC_preprocess=\
          ./src/adjoint_lib.f90 \
          ./src/preprocess_lib.f90 \
          ./src/optimization_lib.f90 \
-	 ./src/split_string.f90 \
+         ./src/split_string.f90 
 
 LIB_preprocess=seismo.a
 LIBOBJ_preprocess = ${LIBSRC_preprocess:%.f=${LIB_preprocess}(%.o)} ${LIBSRC_preprocess:%.f90=${LIB_preprocess}(%.o)} \

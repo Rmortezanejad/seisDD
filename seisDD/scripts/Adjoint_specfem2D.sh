@@ -9,13 +9,13 @@ WORKING_DIR=$6
 DISK_DIR=$7
 
 if [ $isource -eq 1 ] ; then
-echo "SPECFEM2D Adjoint Modeling ..."
-echo "NPROC_SPECFEM=$NPROC_SPECFEM"
-echo "data_type=$data_type"
-echo "velocity_dir=$velocity_dir"
-echo "SAVE_FORWARD=$SAVE_FORWARD"
-echo "WORKING_DIR=$WORKING_DIR"
-echo "DISK_DIR=$DISK_DIR"
+    echo "SPECFEM2D Adjoint Modeling ..."
+    echo "NPROC_SPECFEM=$NPROC_SPECFEM"
+    echo "data_type=$data_type"
+    echo "velocity_dir=$velocity_dir"
+    echo "SAVE_FORWARD=$SAVE_FORWARD"
+    echo "WORKING_DIR=$WORKING_DIR"
+    echo "DISK_DIR=$DISK_DIR"
 fi
 
 
@@ -27,24 +27,29 @@ mkdir -p $ISRC_WORKING_DIR $ISRC_DATA_DIR
 cd $ISRC_WORKING_DIR
 
 ##### edit 'Par_file' #####
-   FILE="./DATA/Par_file"
-   sed -e "s#^SIMULATION_TYPE.*#SIMULATION_TYPE = 3 #g"  $FILE > temp; mv temp $FILE
-   sed -e "s#^SAVE_FORWARD.*#SAVE_FORWARD = .$SAVE_FORWARD. #g"  $FILE > temp; mv temp $FILE
+FILE="./DATA/Par_file"
+sed -e "s#^SIMULATION_TYPE.*#SIMULATION_TYPE = 3 #g"  $FILE > temp; mv temp $FILE
+sed -e "s#^SAVE_FORWARD.*#SAVE_FORWARD = .$SAVE_FORWARD. #g"  $FILE > temp; mv temp $FILE
 
+##### forward simulation (data) #####
+./bin/xmeshfem2D > OUTPUT_FILES/output_mesher.txt
 
-   ##### forward simulation (data) #####
-   ./bin/xmeshfem2D > OUTPUT_FILES/output_mesher.txt
+if [ $isource -eq 1 ] ; then
+    echo "mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D"
+fi
+mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D > OUTPUT_FILES/output_adjoint.txt
 
-   if [ $isource -eq 1 ] ; then
-   echo "mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D"
-   fi
-   mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D > OUTPUT_FILES/output_adjoint.txt
+#### mask source 
+# Source location
+export xs=$(awk -v "line=$isource" 'NR==line { print $1 }' DATA/sources.dat)
+export zs=$(awk -v "line=$isource" 'NR==line { print $2 }' DATA/sources.dat) 
+mpirun -np $NPROC_SPECFEM ./bin/mask_func.exe $xs $zs DATA/ OUTPUT_FILES/ 
 
 # save
-  if [ $isource -eq 1 ]; then  ## for size
+if [ $isource -eq 1 ]; then  ## for size
     mkdir -p $DISK_DIR/misfit_kernel
     cp -r DATA/proc*_x.bin $DISK_DIR/misfit_kernel/
     cp -r DATA/proc*_z.bin $DISK_DIR/misfit_kernel/
     cp -r DATA/proc*_NSPEC_ibool.bin $DISK_DIR/misfit_kernel/
     cp -r DATA/proc*_jacobian.bin $DISK_DIR/misfit_kernel/
-  fi
+fi

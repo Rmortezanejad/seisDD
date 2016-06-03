@@ -12,16 +12,16 @@ Wscale=$9
 wavelet_path=${10}
 
 if [ $isource -eq 1 ]; then
-echo "adjoint source ..."
-echo "NPROC_SPECFEM=$NPROC_SPECFEM"
-echo "compute_adjoint=$compute_adjoint"
-echo "data_list=$data_list"
-echo "measurement_list=$measurement_list"
-echo "misfit_type_list=$misfit_type_list"
-echo "Wscale=$Wscale"
-echo "wavelet_path=$wavelet_path"
-echo "WORKING_DIR=$WORKING_DIR"
-echo "DISK_DIR=$DISK_DIR"
+    echo "adjoint source ..."
+    echo "NPROC_SPECFEM=$NPROC_SPECFEM"
+    echo "compute_adjoint=$compute_adjoint"
+    echo "data_list=$data_list"
+    echo "measurement_list=$measurement_list"
+    echo "misfit_type_list=$misfit_type_list"
+    echo "Wscale=$Wscale"
+    echo "wavelet_path=$wavelet_path"
+    echo "WORKING_DIR=$WORKING_DIR"
+    echo "DISK_DIR=$DISK_DIR"
 fi
 
 ISRC_WORKING_DIR=$( seq --format="$WORKING_DIR/%06.f/" $(($isource-1)) $(($isource-1)) )
@@ -38,7 +38,6 @@ mkdir -p $INPUT_DIR/SEM
 
 # adjoint source
 mpirun -np $NPROC_SPECFEM ./bin/misfit_adjoint.exe $compute_adjoint $data_list $measurement_list $misfit_type_list $INPUT_DIR
-
 
 ## copy and postprocessing of adjoint source
 arr=$(echo $data_list | tr "," "\n")

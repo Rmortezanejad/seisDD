@@ -24,16 +24,11 @@ export WORKING_DIR="$SUBMIT_DIR/$Job_title/specfem/"  # directory on local nodes
 export DISK_DIR="$SUBMIT_DIR/$Job_title/output/"      # temporary directory for data/model/gradient ...
 export SUBMIT_RESULT="$SUBMIT_DIR/RESULTS/$job/Scale${Wscale}_${measurement_list}_${misfit_type_list}"     # final results
 
-echo 
 echo "Submit job << $Job_title >> in : $SUBMIT_DIR  "
 echo "Working directory: $WORKING_DIR"
 echo "FINAL results in :  $SUBMIT_RESULT"
-echo 
 
 #########################################################################################
-
-
-echo
 STARTTIME=$(date +%s)
 echo "start time is :  $(date +"%T")"
 
@@ -41,14 +36,14 @@ rm -rf $WORKING_DIR
 mkdir -p $WORKING_DIR
 
 if $ReStart; then
-echo
-echo "Re-Starting job ..." 
-echo "Clean up result/DISK directories ..."
-rm -rf $SUBMIT_RESULT $DISK_DIR
-mkdir -p $SUBMIT_RESULT $DISK_DIR
+    echo
+    echo "Re-Starting job ..." 
+    echo "Clean up result/DISK directories ..."
+    rm -rf $SUBMIT_RESULT $DISK_DIR
+    mkdir -p $SUBMIT_RESULT $DISK_DIR
 else
-echo
-echo "Continue with current job ..."
+    echo
+    echo "Continue with current job ..."
 fi 
 
 echo 
@@ -65,13 +60,11 @@ echo "prepare starting model ..."
 rm -rf $DISK_DIR/m_current
 cp -r $initial_velocity_dir    $DISK_DIR/m_current
 
-
 echo
 echo "********************************************************************************************************"
 echo "       Welcome job << $job >> " 
 echo "       Scale: '$Wscale'; measurement: '${measurement_list}'; misfit_type: '${misfit_type_list}' " 
 echo "********************************************************************************************************"
-echo
 
 echo "Forward/Adjoint simulation for current model ...... "
 velocity_dir=$DISK_DIR/m_current
@@ -86,24 +79,20 @@ echo "sum event kernel ...... "
 mkdir -p $DISK_DIR/misfit_kernel
 mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_list $WORKING_DIR $DISK_DIR 2> ./job_info/error_sum_kernel
 
-
 if $smooth ; then
-echo 
-echo "smooth misfit kernel ... "
-if [ $solver == 'specfem3D' ]; then 
-   rm -rf OUTPUT_FILES 
-   mkdir OUTPUT_FILES
-   mkdir OUTPUT_FILES/DATABASES_MPI
-   cp $DISK_DIR/misfit_kernel/proc*external_mesh.bin OUTPUT_FILES/DATABASES_MPI/   
+    echo 
+    echo "smooth misfit kernel ... "
+    if [ $solver == 'specfem3D' ]; then 
+        rm -rf OUTPUT_FILES 
+        mkdir OUTPUT_FILES
+        mkdir OUTPUT_FILES/DATABASES_MPI
+        cp $DISK_DIR/misfit_kernel/proc*external_mesh.bin OUTPUT_FILES/DATABASES_MPI/   
+    fi
+    mpirun -np $NPROC_SPECFEM ./bin/xsmooth_sem $sigma_x $sigma_z $kernel_list,$precond_list $DISK_DIR/misfit_kernel/ $DISK_DIR/misfit_kernel/ $GPU_MODE 2> ./job_info/error_smooth_kernel
 fi
-mpirun -np $NPROC_SPECFEM ./bin/xsmooth_sem $sigma_x $sigma_z $kernel_list,$precond_list $DISK_DIR/misfit_kernel/ $DISK_DIR/misfit_kernel/ $GPU_MODE 2> ./job_info/error_smooth_kernel
-fi
-
-
 
 echo
 echo "******************finish all for scale $Wscale **************"
-echo
 
 cp -r $SUBMIT_DIR/parameter $SUBMIT_RESULT/
 cp -r $DISK_DIR/misfit_kernel $SUBMIT_RESULT/
@@ -123,4 +112,3 @@ echo
 echo "******************well done*******************************"
 
 cp -r $SUBMIT_DIR/job_info/output $SUBMIT_RESULT/
-

@@ -8,22 +8,21 @@ SAVE_FORWARD=false
 
 # local id (from 0 to $ntasks-1)
 if [ $system == 'slurm' ]; then
-        iproc=$SLURM_PROCID  
+    iproc=$SLURM_PROCID  
 elif [ $system == 'pbs' ]; then
-        iproc=$PBS_VNODENUM
+    iproc=$PBS_VNODENUM
 fi
 
 # allocate tasks over all sources
 # ntasks in parallel and nsrc in total
 # nsrc_per_task=$(( $NSRC / $ntasks ))
 # take ceiling 
- nsrc_per_task_ceiling=$(echo $(echo "$NSRC $ntasks" | awk '{ print $1/$2 }') | awk '{printf("%d\n",$0+=$0<0?0:0.999)}')
- ntasks_ceiling=$(echo $(echo "$NSRC $ntasks" | awk '{print $1%$2}')) 
+nsrc_per_task_ceiling=$(echo $(echo "$NSRC $ntasks" | awk '{ print $1/$2 }') | awk '{printf("%d\n",$0+=$0<0?0:0.999)}')
+ntasks_ceiling=$(echo $(echo "$NSRC $ntasks" | awk '{print $1%$2}')) 
 # take floor 
- nsrc_per_task_floor=$(echo $(echo "$NSRC $ntasks" | awk '{ print int($1/$2) }'))
+nsrc_per_task_floor=$(echo $(echo "$NSRC $ntasks" | awk '{ print int($1/$2) }'))
 
-
- # allocate nsrc for each task
+# allocate nsrc for each task
 if [ $iproc -lt $ntasks_ceiling ]; then
     nsrc_this_task=$nsrc_per_task_ceiling
     isource_start=$(echo $(echo "$iproc $nsrc_per_task_ceiling" | awk '{ print $1*$2 }'))
@@ -42,16 +41,15 @@ echo "iproc = $iproc, isource_start = $isource_start, nsrc_this_task = ${nsrc_th
 # source for this task
 for ((isrc_this_task=1; isrc_this_task<=${nsrc_this_task}; isrc_this_task++));
 do 
-   let isource=`echo $isource_start, $isrc_this_task |awk '{print $1 + $2 }'` 
-   if $DISPLAY_DETAILS; then
-    echo "iproc = $iproc, isource = $isource"
-   fi
+    let isource=`echo $isource_start, $isrc_this_task |awk '{print $1 + $2 }'` 
+    if $DISPLAY_DETAILS; then
+        echo "iproc = $iproc, isource = $isource"
+    fi
 
-   if  $ExistDATA && [ -d "$DATA_DIR" ]; then
-     sh $SCRIPTS_DIR/copy_data.sh $isource $data_tag $data_list $WORKING_DIR $DISK_DIR $DATA_DIR
-   else
-     sh $SCRIPTS_DIR/Forward_${solver}.sh $isource $NPROC_SPECFEM $data_tag $data_list \
-         $velocity_dir $SAVE_FORWARD $WORKING_DIR $DISK_DIR $DATA_DIR 2>./job_info/error_Forward_source$isource
-         
- fi
+    if  $ExistDATA && [ -d "$DATA_DIR" ]; then
+        sh $SCRIPTS_DIR/copy_data.sh $isource $data_tag $data_list $WORKING_DIR $DISK_DIR $DATA_DIR
+    else
+        sh $SCRIPTS_DIR/Forward_${solver}.sh $isource $NPROC_SPECFEM $data_tag $data_list \
+            $velocity_dir $SAVE_FORWARD $WORKING_DIR $DISK_DIR $DATA_DIR 2>./job_info/error_Forward_source$isource
+    fi
 done

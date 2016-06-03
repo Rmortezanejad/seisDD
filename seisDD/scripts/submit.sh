@@ -32,24 +32,24 @@ workflow_DIR="$package_path/workflow"
 
 if [ "$job" ==  "modeling" ] || [ "$job" ==  "Modeling" ]
 then
-echo " ########################################################"
-echo " Forward modeling .." 
-echo " ########################################################"
-cp $workflow_DIR/Modeling.sh $Job_title.sh
+    echo " ########################################################"
+    echo " Forward modeling .." 
+    echo " ########################################################"
+    cp $workflow_DIR/Modeling.sh $Job_title.sh
 
 elif [ "$job" ==  "kernel" ] || [ "$job" ==  "Kernel" ]
 then
-echo " ########################################################"
-echo " Adjoint Inversion .." 
-echo " ########################################################"
-cp $workflow_DIR/Kernel.sh $Job_title.sh
+    echo " ########################################################"
+    echo " Adjoint Inversion .." 
+    echo " ########################################################"
+    cp $workflow_DIR/Kernel.sh $Job_title.sh
 
 elif [ "$job" ==  "inversion" ]
 then
-echo " ########################################################"
-echo " Adjoint Inversion .." 
-echo " ########################################################"
-cp $workflow_DIR/AdjointInversion.sh $Job_title.sh
+    echo " ########################################################"
+    echo " Adjoint Inversion .." 
+    echo " ########################################################"
+    cp $workflow_DIR/AdjointInversion.sh $Job_title.sh
 fi
 
 echo
@@ -68,11 +68,10 @@ sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/SRC#g"  $FILE > temp;  mv temp $FILE
 make -f make_file clean
 make -f make_file
 
-
 echo 
 echo " edit request nodes and tasks ..."
-   nproc=$NPROC_SPECFEM
-   nodes=$(echo $(echo "$ntasks $nproc $max_nproc_per_node" | awk '{ print $1*$2/$3 }') | awk '{printf("%d\n",$0+=$0<0?0:0.999)}')
+nproc=$NPROC_SPECFEM
+nodes=$(echo $(echo "$ntasks $nproc $max_nproc_per_node" | awk '{ print $1*$2/$3 }') | awk '{printf("%d\n",$0+=$0<0?0:0.999)}')
 echo " Request $nodes nodes, $ntasks tasks, $nproc cpus per task "
 
 echo
@@ -84,7 +83,7 @@ echo
 if [ $system == 'slurm' ]; then
     echo "slurm system ..."
     echo "sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh"
-          sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh
+    sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh
 
 elif [ $system == 'pbs' ]; then
     echo "pbs system ..."

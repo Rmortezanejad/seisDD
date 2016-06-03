@@ -1,21 +1,20 @@
-
+!! To split string 
+!! yanhuay@princeton.edu 
 
 subroutine split_string(instring,delimiter,outstring,nstring)
 
-  use constants,only: MAX_STRING_LEN, MAX_KERNEL_NUM
+    use constants,only: MAX_STRING_LEN, MAX_KERNEL_NUM
 
-  implicit none
+    implicit none
 
-  character(len=MAX_STRING_LEN),intent(in) :: instring
-  character(len=MAX_STRING_LEN),intent(inout) :: outstring(MAX_KERNEL_NUM)
-  integer,intent(out) :: nstring
-  character,intent(in) :: delimiter 
+    character(len=MAX_STRING_LEN),intent(in) :: instring
+    character(len=MAX_STRING_LEN),intent(inout) :: outstring(MAX_KERNEL_NUM)
+    integer,intent(out) :: nstring
+    character,intent(in) :: delimiter 
 
-  ! local parameters
-  integer :: index,istring
-  character(len=MAX_STRING_LEN) :: scan_string, remaining_string
-!  character,parameter :: delimiter = ','
-
+    ! local parameters
+    integer :: index,istring
+    character(len=MAX_STRING_LEN) :: scan_string, remaining_string
 
     ! intialization 
     scan_string = TRIM(instring)
@@ -24,23 +23,17 @@ subroutine split_string(instring,delimiter,outstring,nstring)
     ! try 
     index = SCAN(scan_string,delimiter)
     istring=0
-  !  print*,'scan string:',trim(scan_string)
-  !  print*,'index=',index
 
     ! loop
     do while (len(trim(remaining_string))>0 .and. index>0)
-  !  print*,'scan string:',trim(scan_string)
-  !  print*,'index=',index
 
     istring=istring+1
     outstring(istring) = scan_string(1:index-1)
     remaining_string = scan_string(index+1:)
-  !  print*,'split part:',trim(outstring(istring))
-  !  print*,'remaining string:',trim(remaining_string)
 
-  !  print*,'prepare for next split ...'
     scan_string = trim(remaining_string)
     index = SCAN(scan_string,delimiter)
+
     enddo
 
     nstring=istring+1
@@ -48,4 +41,3 @@ subroutine split_string(instring,delimiter,outstring,nstring)
     outstring(nstring)= remaining_string
 
 end subroutine split_string
-
