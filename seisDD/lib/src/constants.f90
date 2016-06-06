@@ -48,8 +48,8 @@ integer, parameter :: COSINE= 3
 ! constants
 real(kind=CUSTOM_REAL), parameter :: TWOPI=2.0 * PI
 complex (CUSTOM_REAL), parameter :: CCI=cmplx(0.,1.)
-real(kind=CUSTOM_REAL), parameter :: LARGE_VAL=1.0d8
-real(kind=CUSTOM_REAL), parameter :: SMALL_VAL=1.0d-20
+real(kind=CUSTOM_REAL), parameter :: LARGE_VAL=huge(0.0)
+real(kind=CUSTOM_REAL), parameter :: SMALL_VAL=tiny(0.0)
 ! phase correction control parameters, set this between (PI, 2PI),
 ! use a higher value for conservative phase wrapping
 real(kind=CUSTOM_REAL), parameter :: PHASE_STEP=1.5 * PI
@@ -83,7 +83,7 @@ real(kind=CUSTOM_REAL), parameter :: CG_threshold=0.1
 
 ! WT parameters 
 integer, parameter :: nvm=6
-character(len=500) :: WT_directory='./WT_basis'
+character(len=MAX_STRING_LEN) :: WT_directory='./WT_basis'
  
 ! gradient rho, Vp, Vs dim 
 integer, parameter :: gdim_rho=3
@@ -96,7 +96,7 @@ integer, parameter :: mdim_vs=6
 
 ! Display 
 logical :: DISPLAY_DETAILS=.false.
-character(len=500) :: output_dir='OUTPUT_FILES'
+character(len=MAX_STRING_LEN) :: output_dir='OUTPUT_FILES'
 ! -------------------------------------------------------------
 
 end module constants
