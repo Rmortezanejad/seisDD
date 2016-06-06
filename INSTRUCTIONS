@@ -1,9 +1,18 @@
 # The default system is on slurm used at Princeton
 #
 # seisDD 
-#
+# download seisDD from github
+git clone https://github.com/yanhuay/seisDD 
+# set seisDD path
+echo '# set seisDD path' >> ~/.bashrc
+echo 'export seisDD=/path/of/seisDD' >> ~/.bashrc 
+source ~/.bashrc
+echo $seisDD
+# make sure $seisDD is the same of echo '# /path/to/seisDD 
+
 # with this specfem2d, I added an example of using tomo
 # file to input attentuaton model
+# compile with ifort
 cd specfem2d
 ./configure FC=ifort --with-mpi
 make clean
@@ -24,6 +33,8 @@ cd Exp1
 ./run_this_example.sh
 cd submit_job
 ./submit.sh
+# to visualize 
+python ../../../visualize/plot_bin  ./RESULTS/kernel/Scale0_CC_DD/misfit_kernel/ beta_kernel_smooth 4 
 
 #Exp2 -- figure 4-10
 cd Exp2
