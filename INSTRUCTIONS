@@ -9,17 +9,16 @@ echo 'export seisDD=/path/of/seisDD' >> ~/.bashrc
 source ~/.bashrc
 echo $seisDD
 # make sure $seisDD is the same as '/path/to/seisDD' 
-cd $seisDD
 
 # with this specfem2d, I added an example of using tomo
 # file to input attentuaton model
 # compile with ifort
-cd specfem2d
+cd $seisDD/specfem2d
 ./configure FC=ifort --with-mpi
 make clean
 make all
 
-cd seisDD/lib
+cd $seisDD/seisDD/lib
 make -f make_lib clean
 make -f make_lib
 
@@ -27,7 +26,7 @@ make -f make_lib
 #Double-difference adjoint seismic tomography
 #YO Yuan, FJ Simons, J Tromp
 #Geophysical Journal International (2016) accepted for publication
-cd GJI2016
+cd $seisDD/GJI2016
 
 #Exp1 -- figure 1-3
 cd Exp1
