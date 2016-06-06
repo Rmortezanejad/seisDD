@@ -16,22 +16,22 @@ solver='specfem2D' # specfem2D, specfem3D
 ReStart=true   # true--Relaunch all files; false--Start from current status
 
 #path
-package_path='/tigress/yanhuay/seisDD/seisDD'
-specfem_path='/tigress/yanhuay/seisDD/specfem2d'
+package_path="$seisDD/seisDD"
+specfem_path="$seisDD/specfem2d"
 
 # if observations exist
 ExistDATA=false
 # directory for observations
-DATA_DIR='/tigress/yanhuay/seisDD/GJI2016/Exp4/data'
+DATA_DIR="$seisDD/GJI2016/Exp4/data"
 
 #########################################  models ###################################################################
 isotropy=true
 attenuation=false
 anisotropy=false
-target_velocity_dir='/tigress/yanhuay/seisDD/GJI2016/Exp4/model_true_bin'
+target_velocity_dir="$seisDD/GJI2016/Exp4/model_true_bin"
 target_attenuation_file=''
 target_anisotropy_file=''
-initial_velocity_dir='/tigress/yanhuay/seisDD/GJI2016/Exp4/model_init_bin'
+initial_velocity_dir="$seisDD/GJI2016/Exp4/model_init_bin"
 initial_attenuation_file=''
 initial_anisotropy_file=''
 
