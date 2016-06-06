@@ -10,8 +10,8 @@ make clean
 make all
 
 cd seisDD/lib
-make -f make_ifort clean
-make -f make_ifort
+make -f make_lib clean
+make -f make_lib
 
 # Experiments in paper:
 #Double-difference adjoint seismic tomography
