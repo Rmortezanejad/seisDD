@@ -8,7 +8,7 @@ echo '# set seisDD path' >> ~/.bashrc
 echo 'export seisDD=/path/of/seisDD' >> ~/.bashrc 
 source ~/.bashrc
 echo $seisDD
-# make sure $seisDD is the same of echo '# /path/to/seisDD 
+# make sure $seisDD is the same as '/path/to/seisDD' 
 
 # with this specfem2d, I added an example of using tomo
 # file to input attentuaton model
