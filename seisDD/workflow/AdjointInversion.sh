@@ -211,7 +211,7 @@ cp -r $SUBMIT_DIR/job_info/output $SUBMIT_RESULT/
 
 echo
 echo " clean up local nodes (wait) ...... "
-rm -rf $WORKING_DIR
+rm -rf $SUBMIT_DIR/$Job_title
 rm -rf OUTPUT_FILES
 
 ENDTIME=$(date +%s)

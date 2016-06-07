@@ -44,12 +44,14 @@ then
     echo " ########################################################"
     cp $workflow_DIR/Kernel.sh $Job_title.sh
 
-elif [ "$job" ==  "inversion" ]
+elif [ "$job" ==  "inversion" ] || [ "$job" ==  "FWI" ]
 then
     echo " ########################################################"
     echo " Adjoint Inversion .." 
     echo " ########################################################"
     cp $workflow_DIR/AdjointInversion.sh $Job_title.sh
+else
+    echo "Wrong job: $job"
 fi
 
 echo

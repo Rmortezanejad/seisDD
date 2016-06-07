@@ -57,7 +57,6 @@ program sum_kernel
     output_dir=arg(3)
 
     call split_string(kernel_names_comma_delimited,delimiter,kernel_names,nker)
-    if(myrank==0) print*,'number of kernels in list:', nker
 
     !! initialization  -- get number of spectral elements
     call initialize(output_dir) 
@@ -84,8 +83,8 @@ program sum_kernel
         write(filename,'(a,i6.6,a,i6.6,a)') &
             trim(input_dir)//'/',isrc,'/'//trim(LOCAL_PATH)//'/proc',&
             myrank,'_'//trim(adjustl(kernel_names(iker)))//'.bin'
-
-        if (myrank == 0 .and. isrc==0)  print*,'LOAD event_kernel -- ',trim(filename)
+        if (DISPLAY_DETAILS .and. myrank == 0 .and. isrc==0) &
+            print*,'LOAD event_kernel --', trim(adjustl(kernel_names(iker)))
         ! gets slice of kernel
         open(unit=IIN,file=trim(filename),status='old',action='read',form='unformatted',iostat=ier)
         if (ier /= 0) then
@@ -94,12 +93,10 @@ program sum_kernel
         endif
         ! global point arrays
         read(IIN) dat
-        if(DISPLAY_DETAILS .and. isrc==0 .and. myrank==0) then
-            print *,' Min / Max event_kernel = ', &
-                minval(dat(:,:,:,:)),maxval(dat(:,:,:,:)),&
-                'for ',trim(adjustl(kernel_names(iker)))
-        endif
-        close(IIN)
+    close(IIN)
+    if(DISPLAY_DETAILS .and. myrank==0 .and. isrc==0) &
+        print *,' Min / Max = ',&
+        minval(dat(:,:,:,:)),maxval(dat(:,:,:,:))
 
         !! mask before summation
         if (MASK_SOURCE .or. MASK_STATION) then 
@@ -113,7 +110,8 @@ program sum_kernel
             endif
             read(IIN) mask
             close(IIN)
-            if (myrank == 0 .and. isrc==0)  print*,'LOAD mask file -- ',trim(filename)
+            if (myrank == 0 .and. isrc==0)  &
+                print*,'LOAD mask file -- ',trim(filename)
         endif  
 
         !! sum over isrc
@@ -129,8 +127,8 @@ program sum_kernel
         write(filename,'(a,i6.6,a)') &
             trim(output_dir)//'/misfit_kernel/proc',myrank,&
             '_'//trim(adjustl(kernel_names(iker)))//'.bin'
-
-        if (myrank == 0) print*,'SAVE misfit_kernel -- ', trim(filename)
+        if (myrank == 0) &
+            print*,'SAVE misfit_kernel -- ',trim(adjustl(kernel_names(iker)))
         open(unit=IOUT,file=trim(filename),status='unknown',form='unformatted',iostat=ier)
         if (ier /= 0) then
             print*, 'Error: could not open gradient file: ',trim(filename)
@@ -139,12 +137,9 @@ program sum_kernel
         write(IOUT) sum_dat
         close(IOUT)
 
-        if(DISPLAY_DETAILS .and. myrank==0) then
-            print *,' Min / Max misfit_kernel = ',&
-                minval(sum_dat(:,:,:,:)),maxval(sum_dat(:,:,:,:)),&
-                'for ',trim(adjustl(kernel_names(iker)))
-
-        endif
+        if(DISPLAY_DETAILS .and. myrank==0) &
+            print *,' Min / Max = ',&
+                minval(sum_dat(:,:,:,:)),maxval(sum_dat(:,:,:,:))
 
     endif ! non-empty
     enddo !iker

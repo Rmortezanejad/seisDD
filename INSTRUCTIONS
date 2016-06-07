@@ -12,9 +12,16 @@ echo $seisDD
 
 # with this specfem2d, I added an example of using tomo
 # file to input attentuaton model
-# compile with ifort
+# compile with ifort and mpi
+module load intel-mkl/11.0/1/64
+module load intel/13.0/64/13.0.1.117
 cd $seisDD/specfem2d
+## with mpi (recommended) for parallel simulation
+module load openmpi/intel-13.0/1.6.3/64
 ./configure FC=ifort --with-mpi
+## without mpi for serial simulation (NPROC_SPECFEM=1) 
+./configure FC=ifort
+# compile
 make clean
 make all
 
