@@ -9,6 +9,7 @@ SAVE_FORWARD=$6
 WORKING_DIR=$7
 DISK_DIR=$8
 DATA_DIR=$9
+job=${10}
 
 if [ $isource -eq 1 ] ; then
     echo "SPECFEM2D Forward Modeling ..."
@@ -20,6 +21,7 @@ if [ $isource -eq 1 ] ; then
     echo "WORKING_DIR=$WORKING_DIR"
     echo "DISK_DIR=$DISK_DIR"
     echo "DATA_DIR=$DATA_DIR"
+    echo "job=$job"
 fi
 
 ISRC_WORKING_DIR=$( seq --format="$WORKING_DIR/%06.f/" $(($isource-1)) $(($isource-1)) ) # working directory (on local nodes, where specfem runs)
@@ -58,17 +60,10 @@ sed -e "s#^SAVE_FORWARD.*#SAVE_FORWARD = .$SAVE_FORWARD. #g"  $FILE > temp; mv t
 ##### forward simulation (data) #####
 ./bin/xmeshfem2D > OUTPUT_FILES/output_mesher.txt
 
-if [ $NPROC_SPECFEM -eq 1 ]; then
-    if [ $isource -eq 1 ] ; then
-        echo "./bin/xspecfem2D"
-    fi
-    ./bin/xspecfem2D > OUTPUT_FILES/output_forward.txt
-else
-    if [ $isource -eq 1 ] ; then
-        echo "mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D"
-    fi
-    mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D > OUTPUT_FILES/output_forward.txt
+if [ $isource -eq 1 ] ; then
+    echo "mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D"
 fi
+mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D > OUTPUT_FILES/output_forward.txt
 
 ## copy and preprocessing of data 
 arr=$(echo $data_list | tr "," "\n")
@@ -97,7 +92,7 @@ do
     fi
 done
 
-if [ "$data_tag" == "DATA_obs" ]; 
+if [ "$data_tag" == "DATA_obs" ] && [ "$job" == "modeling" ]; 
 then
     mkdir -p $DATA_DIR 
     ISRC_DATA_DIR_SAVE=$( seq --format="$DATA_DIR/%06.f/" $(($isource-1)) $(($isource-1)) )

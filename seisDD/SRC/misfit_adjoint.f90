@@ -163,10 +163,8 @@ program misfit_adjoint
     endif
 
     call cpu_time(t2)
-    if(DISPLAY_DETAILS .and. compute_adjoint .and. myrank==0) then
+    if(DISPLAY_DETAILS .and. compute_adjoint .and. myrank==0) &
         print *,'Computation time with CPU:',t2-t1
-        print*
-    endif
 
 #ifdef USE_MPI
     ! stop all the processes and exit

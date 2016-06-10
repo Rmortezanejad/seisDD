@@ -110,7 +110,7 @@ program sum_kernel
             endif
             read(IIN) mask
             close(IIN)
-            if (myrank == 0 .and. isrc==0)  &
+            if (myrank == 0 .and. isrc==0 .and. iker==0)  &
                 print*,'LOAD mask file -- ',trim(filename)
         endif  
 

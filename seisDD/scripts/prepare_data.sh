@@ -46,10 +46,16 @@ do
         echo "iproc = $iproc, isource = $isource"
     fi
 
+    STARTTIME=$(date +%s)
     if  $ExistDATA && [ -d "$DATA_DIR" ]; then
         sh $SCRIPTS_DIR/copy_data.sh $isource $data_tag $data_list $WORKING_DIR $DISK_DIR $DATA_DIR
     else
         sh $SCRIPTS_DIR/Forward_${solver}.sh $isource $NPROC_SPECFEM $data_tag $data_list \
-            $velocity_dir $SAVE_FORWARD $WORKING_DIR $DISK_DIR $DATA_DIR 2>./job_info/error_Forward_source$isource
+            $velocity_dir $SAVE_FORWARD $WORKING_DIR $DISK_DIR $DATA_DIR $job 2>./job_info/error_Forward_simulation
     fi
+ if [ $isource -eq 1 ] ; then
+     ENDTIME=$(date +%s)
+     Ttaken=$(($ENDTIME - $STARTTIME))
+     echo "Data preparation took $Ttaken seconds"
+ fi
 done
