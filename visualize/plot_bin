@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ## to plot binary kernel or model file 
-## usage: plot_bin dirname parameters nproc
+## usage: python $seisDD/visualize/plot_bin /path/to/files parameters nproc
 ## python version: Python 2.7.11
 
 import os
