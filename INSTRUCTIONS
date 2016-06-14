@@ -19,7 +19,7 @@ cd $seisDD/specfem2d
 ## with mpi (recommended) for parallel simulation
 module load openmpi/intel-13.0/1.6.3/64
 ./configure FC=ifort --with-mpi
-## without mpi for serial simulation (NPROC_SPECFEM=1) 
+## without mpi for serial simulation (queue='serial') 
 ./configure FC=ifort
 # compile
 make clean
@@ -34,45 +34,19 @@ make -f make_lib
 #YO Yuan, FJ Simons, J Tromp
 #Geophysical Journal International (2016) accepted for publication
 cd $seisDD/GJI2016
+# refer to $seisDD/GJI2016/readme for details
 
-#Exp1 -- figure 1-3
-cd Exp1
-./run_this_example.sh
-cd submit_job
-./submit.sh
-# to visualize 
-python ../../../visualize/plot_bin  ./RESULTS/kernel/Scale0_CC_DD/misfit_kernel/ beta_kernel_smooth 4 
-
-#Exp2 -- figure 4-10
-cd Exp2
-./run_this_example.sh
-cd submit_job
-./submit.sh
-# Experiment IIA -- default
-# Experiment IIB -- change ``time_function_type=1'' in DATA/SOURCE 
-# Experiment IIC -- change ``tshift=-1.0'' in SU_process/process_obs.sh
-
-#Exp3 -- figure 11-12
-cd Exp3
-./run_this_example.sh
-cd submit_job
-./submit.sh
-
-#Exp4 -- figure 13
-cd Exp4
-./run_this_example.sh
-cd submit_job
-./submit.sh
-
-#Exp5 -- figure 14 
-cd Exp5
-./run_this_example.sh
-cd submit_job
-./submit.sh
-
-#
 #
 # Addtional comments
+# How to start a new project 
+# checklist:
+# DATA/: Par_file, interfaces.dat, SOURCE, sources.dat STATION
+# model_init_bin: initial gll binary model 
+# model_trye_bin: target gll binary model (optional if observed data exist)
+# data: obaserved data (optional if model_true_bin esists)
+# parameter: inversion parameter file including path setting and inversion parameters
+# SU_process: preprocessing procedure using SU package (optional)
+#
 # How to prepare gll model
 # 1. prepare tomo model on regular grids
   !
@@ -100,4 +74,4 @@ cd submit_job
  nmodels=1
  1 -1 0 0 0 0 0 0 0 0 0 0 0 0 0
  TOMOGRAPHY_FILE = /your/tomo/file
-# output models are in DATA/
+# output models are in DATA/proc00000****.bin
