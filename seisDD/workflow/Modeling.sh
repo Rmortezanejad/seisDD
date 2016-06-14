@@ -22,7 +22,7 @@ cd $SUBMIT_DIR
 export SCRIPTS_DIR="$package_path/scripts"
 export SUBMIT_RESULT="$SUBMIT_DIR/RESULTS/$job/Scale${Wscale}_${measurement_list}_${misfit_type_list}"     # final results
 if [ -z "$working_path" ]; then
-    let working_path=$SUBMIT_DIR
+    export working_path=$SUBMIT_DIR
 fi
 export WORKING_DIR="$working_path/$Job_title/specfem/"  # directory on local nodes, where specfem runs
 export DISK_DIR="$working_path/$Job_title/output/"      # temporary directory for data/model/gradient ...
@@ -62,7 +62,7 @@ cp -r $SUBMIT_DIR/parameter $SUBMIT_RESULT/
 
 echo
 echo " clean up local nodes (wait) ...... "
-rm -rf $working_path/$Job_title
+#rm -rf $working_path/$Job_title
 
 ENDTIME=$(date +%s)
 Ttaken=$(($ENDTIME - $STARTTIME))

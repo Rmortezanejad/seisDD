@@ -27,31 +27,58 @@ fi
 ### FORWARD MODELNG INFO 
 sed -e "s#^INTEGER, PARAMETER :: NSTEP=.*#INTEGER, PARAMETER :: NSTEP=$NSTEP #g"  $FILE > temp;  mv temp $FILE
 sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: deltat=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: deltat=$deltat #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: t0=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: t0=$t0 #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$t0" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: t0=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: t0=$t0 #g"  $FILE > temp;  mv temp $FILE
+fi
 sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: f0=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: f0=$f0 #g"  $FILE > temp;  mv temp $FILE
 sed -e "s#^INTEGER, PARAMETER :: NREC=.*#INTEGER, PARAMETER :: NREC=$NREC #g"  $FILE > temp;  mv temp $FILE
 sed -e "s#^INTEGER, PARAMETER :: NSRC=.*#INTEGER, PARAMETER :: NSRC=$NSRC #g"  $FILE > temp;  mv temp $FILE
 
 ## PRE-PROCESSING
 # wavelet
-sed -e "s#^INTEGER, PARAMETER :: Wscale=.*#INTEGER, PARAMETER :: Wscale=$Wscale #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$Wscale" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: Wscale=.*#INTEGER, PARAMETER :: Wscale=$Wscale #g"  $FILE > temp;  mv temp $FILE
+fi
 # window
-sed -e "s#^INTEGER, PARAMETER :: is_window=.*#INTEGER, PARAMETER :: is_window=$is_window #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^INTEGER, PARAMETER :: window_type=.*#INTEGER, PARAMETER :: window_type=$window_type#g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmax=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmax=${Vmax} #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmin=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmin=${Vmin} #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$is_window" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: is_window=.*#INTEGER, PARAMETER :: is_window=$is_window #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$window_type" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: window_type=.*#INTEGER, PARAMETER :: window_type=$window_type#g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$Vmax" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmax=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmax=${Vmax} #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$Vmin" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmin=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmin=${Vmin} #g"  $FILE > temp;  mv temp $FILE
+fi
 # damping
-sed -e "s#^INTEGER, PARAMETER :: is_laplace=.*#INTEGER, PARAMETER :: is_laplace=$is_laplace #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: X_decay=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: X_decay=${X_decay} #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: T_decay=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: T_decay=${T_decay} #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$is_laplace" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: is_laplace=.*#INTEGER, PARAMETER :: is_laplace=$is_laplace #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$X_decay" ]; then
+
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: X_decay=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: X_decay=${X_decay} #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$T_decay" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: T_decay=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: T_decay=${T_decay} #g"  $FILE > temp;  mv temp $FILE
+fi
 # mute
-sed -e "s#^INTEGER, PARAMETER :: mute_near=.*#INTEGER, PARAMETER :: mute_near=$mute_near #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_near=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_near=${offset_near} #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^INTEGER, PARAMETER :: mute_far=.*#INTEGER, PARAMETER :: mute_far=$mute_far #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_far=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_far=${offset_far} #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$mute_near" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: mute_near=.*#INTEGER, PARAMETER :: mute_near=$mute_near #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$offset_near" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL) :: offset_near=.*#REAL(KIND=CUSTOM_REAL) :: offset_near=${offset_near} #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$mute_far" ]; then
+
+    sed -e "s#^INTEGER, PARAMETER :: mute_far=.*#INTEGER, PARAMETER :: mute_far=$mute_far #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$offset_far" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL) :: offset_far=.*#REAL(KIND=CUSTOM_REAL) :: offset_far=${offset_far} #g"  $FILE > temp;  mv temp $FILE
+fi
 
 # MISFIT
-sed -e "s#^LOGICAL :: sensitivity=.*#LOGICAL :: sensitivity=.$sensitivity.#g"  $FILE > temp;  mv temp $FILE 
 sed -e "s#^CHARACTER (LEN=20) :: solver=.*#CHARACTER (LEN=20) :: solver='$solver'#g"  $FILE > temp;  mv temp $FILE
 sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: cc_threshold=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: cc_threshold=${cc_threshold} #g"  $FILE > temp;  mv temp $FILE
 if [ ! -z "$DD_min" ]; then
@@ -62,14 +89,30 @@ if [ ! -z "$DD_max" ]; then
 fi
 
 # INVERSION
-sed -e "s#^CHARACTER (LEN=2) :: opt_scheme=.*#CHARACTER (LEN=2) :: opt_scheme='$opt_scheme'#g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^INTEGER, PARAMETER :: CGSTEPMAX=.*#INTEGER, PARAMETER :: CGSTEPMAX=$CGSTEPMAX #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^CHARACTER (LEN=2) :: CG_scheme=.*#CHARACTER (LEN=2) :: CG_scheme='$CG_scheme'#g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^INTEGER, PARAMETER :: BFGS_STEPMAX=.*#INTEGER, PARAMETER :: BFGS_STEPMAX=$BFGS_STEPMAX #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: initial_step_length=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: initial_step_length=$initial_step_length #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: min_step_length=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: min_step_length=$min_step_length #g" $FILE > temp;  mv temp $FILE                                                                                            
-sed -e "s#^INTEGER, PARAMETER :: max_step=.*#INTEGER, PARAMETER :: max_step=$max_step#g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^LOGICAL :: backtracking=.*#LOGICAL :: backtracking=.$backtracking.#g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$opt_scheme" ]; then
+    sed -e "s#^CHARACTER (LEN=2) :: opt_scheme=.*#CHARACTER (LEN=2) :: opt_scheme='$opt_scheme'#g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$CGSTEPMAX" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: CGSTEPMAX=.*#INTEGER, PARAMETER :: CGSTEPMAX=$CGSTEPMAX #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$CG_scheme" ]; then
+    sed -e "s#^CHARACTER (LEN=2) :: CG_scheme=.*#CHARACTER (LEN=2) :: CG_scheme='$CG_scheme'#g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$BFGS_STEPMAX" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: BFGS_STEPMAX=.*#INTEGER, PARAMETER :: BFGS_STEPMAX=$BFGS_STEPMAX #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$initial_step_length" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: initial_step_length=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: initial_step_length=$initial_step_length #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$min_step_length" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: min_step_length=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: min_step_length=$min_step_length #g" $FILE > temp;  mv temp $FILE 
+fi
+if [ ! -z "$max_step" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: max_step=.*#INTEGER, PARAMETER :: max_step=$max_step#g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$backtracking" ]; then
+    sed -e "s#^LOGICAL :: backtracking=.*#LOGICAL :: backtracking=.$backtracking.#g"  $FILE > temp;  mv temp $FILE
+fi
 
 # POST-PROCESSING
 sed -e "s#^LOGICAL :: smooth=.*#LOGICAL :: smooth=.$smooth.#g"  $FILE > temp;  mv temp $FILE

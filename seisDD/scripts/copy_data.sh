@@ -20,34 +20,24 @@ if [ $isource -eq 1 ]; then
 fi
 # Source location
 DATA_DIR=$( seq --format="$DATA_DIR/%06.f/" $(($isource-1)) $(($isource-1)) )
-
-cp -r $SUBMIT_DIR/SU_process ./
 cp -r $SUBMIT_DIR/parameter ./
 cp -r $DATA_DIR/* $ISRC_DATA_DIR/ 
+# if $SUBMIT_DIR/SU_process exist
+if [ -d "$SUBMIT_DIR/SU_process" ]; then
+    cp -r $SUBMIT_DIR/SU_process ./
+fi
 
 ## copy and preprocessing of data 
 arr=$(echo $data_list | tr "," "\n")
 
 for x in $arr
 do
-    if [ $x =  'x' ]; then
+    if [ -f "SU_process/process_obs.sh" ]; then
         sh SU_process/process_obs.sh \
-            $DATA_DIR/Ux_file_single.su \
-            $ISRC_DATA_DIR/Ux_file_single.su
+            $DATA_DIR/U${x}_file_single.su \
+            $ISRC_DATA_DIR/U${x}_file_single.su
+    else
+        cp  $DATA_DIR/U${x}_file_single.su \
+            $ISRC_DATA_DIR/U${x}_file_single.su
     fi
-    if [ $x =  'y' ]; then
-        sh SU_process/process_obs.sh \
-            $DATA_DIR/Uy_file_single.su \
-            $ISRC_DATA_DIR/Uy_file_single.su
-    fi
-    if [ $x =  'z' ]; then                    
-        sh SU_process/process_obs.sh \
-            $DATA_DIR/Uz_file_single.su \
-            $ISRC_DATA_DIR/Uz_file_single.su
-    fi  
-    if [ $x =  'p' ]; then                                    
-        sh SU_process/process_obs.sh \
-            $DATA_DIR/Up_file_single.su \
-            $ISRC_DATA_DIR/Up_file_single.su
-    fi   
 done

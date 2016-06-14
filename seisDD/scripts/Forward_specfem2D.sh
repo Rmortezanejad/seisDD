@@ -32,10 +32,14 @@ mkdir -p $ISRC_WORKING_DIR $ISRC_DATA_DIR
 cd $ISRC_WORKING_DIR
 
 ##echo "####### copy executables & input files ######"
-cp -r $SUBMIT_DIR/SU_process ./
 cp -r $SUBMIT_DIR/parameter ./
 cp -r $SUBMIT_DIR/bin ./
 cp -r $SUBMIT_DIR/DATA ./
+# if $SUBMIT_DIR/SU_process exist
+if [ -d "$SUBMIT_DIR/SU_process" ]; then
+    cp -r $SUBMIT_DIR/SU_process ./
+fi
+# if velocity_dir exist and not empty
 if [ "$(ls -A $velocity_dir)" ]; then
     cp $velocity_dir/* DATA/
 fi
@@ -70,26 +74,14 @@ arr=$(echo $data_list | tr "," "\n")
 
 for x in $arr
 do
-    if [ $x =  'x' ]; then
+    if [ -f "SU_process/process_syn.sh" ]; then
         sh SU_process/process_syn.sh \
-            OUTPUT_FILES/Ux_file_single.su \
-            $ISRC_DATA_DIR/Ux_file_single.su
-    fi
-    if [ $x =  'y' ]; then
-        sh SU_process/process_syn.sh \
-            OUTPUT_FILES/Uy_file_single.su \
-            $ISRC_DATA_DIR/Uy_file_single.su
-    fi
-    if [ $x =  'z' ]; then
-        sh SU_process/process_syn.sh \
-            OUTPUT_FILES/Uz_file_single.su \
-            $ISRC_DATA_DIR/Uz_file_single.su
-    fi
-    if [ $x =  'p' ]; then
-        sh SU_process/process_syn.sh \
-            OUTPUT_FILES/Up_file_single.su \
-            $ISRC_DATA_DIR/Up_file_single.su
-    fi
+            OUTPUT_FILES/U${x}_file_single.su \
+            $ISRC_DATA_DIR/U${x}_file_single.su
+    else
+        cp OUTPUT_FILES/U${x}_file_single.su \
+            $ISRC_DATA_DIR/U${x}_file_single.su
+    fi    
 done
 
 if [ "$data_tag" == "DATA_obs" ] && [ "$job" == "modeling" ]; 

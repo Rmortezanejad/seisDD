@@ -44,24 +44,13 @@ arr=$(echo $data_list | tr "," "\n")
 
 for x in $arr
 do
-    if [ $x =  'x' ]; then
+    if [ -f "SU_process/process_adj.sh" ]; then
         sh SU_process/process_adj.sh \
-            $INPUT_DIR/SEM/Ux_file_single.su.adj \
-            $ISRC_WORKING_DIR/SEM/Ux_file_single.su.adj
-    fi
-    if [ $x =  'y' ]; then
-        sh SU_process/process_adj.sh \
-            $INPUT_DIR/SEM/Uy_file_single.su.adj \
-            $ISRC_WORKING_DIR/SEM/Uy_file_single.su.adj
-    fi
-    if [ $x =  'z' ]; then
-        sh SU_process/process_adj.sh \
-            $INPUT_DIR/SEM/Uz_file_single.su.adj \
-            $ISRC_WORKING_DIR/SEM/Uz_file_single.su.adj
-    fi
-    if [ $x =  'p' ]; then
-        sh SU_process/process_adj.sh \
-            $INPUT_DIR/SEM/Up_file_single.su.adj \
-            $ISRC_WORKING_DIR/SEM/Up_file_single.su.adj
+            $INPUT_DIR/SEM/U${x}_file_single.su.adj \
+            $ISRC_WORKING_DIR/SEM/U${x}_file_single.su.adj            
+    else
+        cp  $INPUT_DIR/SEM/U${x}_file_single.su.adj \
+            $ISRC_WORKING_DIR/SEM/U${x}_file_single.su.adj  
     fi
 done
+
