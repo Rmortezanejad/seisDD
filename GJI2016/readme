@@ -1,41 +1,40 @@
-# Experiments in paper:
-#Double-difference adjoint seismic tomography
-#YO Yuan, FJ Simons, J Tromp
-#Geophysical Journal International (2016) accepted for publication
-cd $seisDD/GJI2016
+Experiments in paper:
+Double-difference adjoint seismic tomography
+YO Yuan, FJ Simons, J Tromp
+Geophysical Journal International (2016) accepted for publication
+>> cd $seisDD/GJI2016
 
-#Exp1 -- figure 1-3
-cd Exp1
-./run_this_example.sh
-cd submit_job
-./submit.sh
-# to visualize 
-python ../../../visualize/plot_bin  ./RESULTS/kernel/Scale0_CC_DD/misfit_kernel/ beta_kernel_smooth 4
+Exp1 -- figure 1-3
+>> cd Exp1
+>> ./run_this_example.sh
+>> cd submit_job
+>> ./submit.sh
+To visualize 
+>> python $seisDD/visualize/plot_bin  ./RESULTS/kernel/Scale0_CC_DD/misfit_kernel/ beta_kernel_smooth 4
 
-#Exp2 -- figure 4-10
-cd Exp2
-./run_this_example.sh
-cd submit_job
-./submit.sh
-# Experiment IIA -- default
-# Experiment IIB -- change ``time_function_type=1'' in DATA/SOURCE 
-# Experiment IIC -- change ``tshift=-1.0'' in SU_process/process_obs.sh
+Exp2 -- figure 4-10
+>> cd Exp2
+>> ./run_this_example.sh
+>> cd submit_job
+>> ./submit.sh
+Experiment IIA -- by default 
+Experiment IIB -- change ``time_function_type=1'' in DATA/SOURCE 
+Experiment IIC -- change ``tshift=-1.0'' in SU_process/process_obs.sh
 
-#Exp3 -- figure 11-12
-cd Exp3
-./run_this_example.sh
-cd submit_job
-./submit.sh
+Exp3 -- figure 11-12
+>> cd Exp3
+>> ./run_this_example.sh
+>> cd submit_job
+>> ./submit.sh
 
-#Exp4 -- figure 13
-cd Exp4
-./run_this_example.sh
-cd submit_job
-./submit.sh
+Exp4 -- figure 13
+>> cd Exp4
+>> ./run_this_example.sh
+>> cd submit_job
+>> ./submit.sh
 
-#Exp5 -- figure 14 
-cd Exp5
-./run_this_example.sh
-cd submit_job
-./submit.sh
-
+Exp5 -- figure 14 
+>> cd Exp5
+>> ./run_this_example.sh
+>> cd submit_job
+>> ./submit.sh
