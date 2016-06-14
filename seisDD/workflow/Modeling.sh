@@ -62,7 +62,9 @@ cp -r $SUBMIT_DIR/parameter $SUBMIT_RESULT/
 
 echo
 echo " clean up local nodes (wait) ...... "
-#rm -rf $working_path/$Job_title
+if ! $DISPLAY_DETAILS ; then
+    rm -rf $working_path/$Job_title
+fi
 
 ENDTIME=$(date +%s)
 Ttaken=$(($ENDTIME - $STARTTIME))

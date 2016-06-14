@@ -138,7 +138,7 @@ subroutine add_source_mask()
     integer :: ix,iy,iz,ispec
     real :: dis
 
-    if(myrank==0) then
+    if(DISPLAY_DETAILS .and. myrank==0) then
         print* 
         print*, 'mask source at:', x_source, y_source, z_source
         print* 
@@ -183,7 +183,7 @@ subroutine add_station_mask(directory)
     st_yval = 0.0 
     st_zval = 0.0
 
-    if(myrank==0) then
+    if(DISPLAY_DETAILS .and. myrank==0) then
         print*
         print*, 'mask stations'
         print*

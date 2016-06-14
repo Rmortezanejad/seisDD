@@ -214,8 +214,10 @@ cp -r $SUBMIT_DIR/job_info/output $SUBMIT_RESULT/
 
 echo
 echo " clean up local nodes (wait) ...... "
-rm -rf $working_path/$Job_title
-rm -rf OUTPUT_FILES
+if ! $DISPLAY_DETAILS ; then
+    rm -rf $working_path/$Job_title
+    rm -rf OUTPUT_FILES
+fi
 
 ENDTIME=$(date +%s)
 Ttaken=$(($ENDTIME - $STARTTIME))

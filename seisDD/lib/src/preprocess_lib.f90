@@ -317,7 +317,6 @@ subroutine WT(seism,NSTEP,level,NA)
 
         ! print*,' load basis functions for wavelet Daubechies',nvm,' scale',level
         write(fname,"(a,i0,a,i0)") 'scale_basis_Daubechies',nvm,'_scale',level
-        ! filename=''//trim(WT_directory)//'/'//trim(fname)//'.dat'
         filename='WT_basis/'//trim(fname)//'.dat'
         ! print*,filename
         OPEN (UNIT=20,FILE=filename,STATUS='OLD',action='read',iostat=st)

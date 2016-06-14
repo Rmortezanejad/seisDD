@@ -110,8 +110,11 @@ program sum_kernel
             endif
             read(IIN) mask
             close(IIN)
-            if (myrank == 0 .and. isrc==0 .and. iker==0)  &
+            if (myrank == 0 .and. isrc==0 .and. iker==1)  then
+                print*, 'MASK SOURCE : ', MASK_SOURCE
+                print*, 'MASK STATION : ', MASK_STATION
                 print*,'LOAD mask file -- ',trim(filename)
+            endif
         endif  
 
         !! sum over isrc
