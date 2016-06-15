@@ -37,7 +37,7 @@ program data_misfit
     !!! add current result to search history
     write(filename, "(a,i2.2)") trim(output_dir)//'/data_misfit/data_misfit_hist_iter',iter
     OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
-    write(IOUT,'(f15.5,e15.5)') step_length,misfit_cur
+    write(IOUT,'(f15.5,f15.5)') step_length,misfit_cur
     close(IOUT)
 
     ! check search status 
@@ -49,7 +49,7 @@ program data_misfit
             !!! misfit hist for iteration 
             write(filename,'(a)') trim(output_dir)//'/data_misfit/data_misfit_hist.dat'
             OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
-            write(IOUT,'(I5,e15.5)') iter-1,misfit_cur
+            write(IOUT,'(I5,f15.5)') iter-1,misfit_cur
             close(IOUT)
         endif
         ! search status initilization
@@ -274,7 +274,7 @@ subroutine check_linesearch(directory,iter)
         !!! misfit hist for iteration 
         write(filename,'(a)') trim(directory)//'/data_misfit/data_misfit_hist.dat'
         OPEN (IOUT, FILE=filename,status='unknown',POSITION='APPEND')
-        write(IOUT,'(I5,e15.5)') iter,optimal_misfit
+        write(IOUT,'(I5,f15.5)') iter,optimal_misfit
         close(IOUT)
 
         ! check iteration for next step
