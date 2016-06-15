@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # paper GJI,2016, Experiement I, figure 1-3
+
+### job info
 Job_title='Exp1'
 system='slurm'  # slurm, lsf or pbs
 queue='tiger'   # serial,tiger(princeton) ...
@@ -12,42 +14,35 @@ compiler='ifort'
 GPU_MODE=false
 job='kernel' # modeling,kernel,inversion
 solver='specfem2D' # specfem2D, specfem3D
-
 ReStart=true   # true--Relaunch all files; false--Start from current status
 
-#path
+### paths
 package_path="$seisDD/seisDD"
 specfem_path="$seisDD/specfem2d"
 
-# if observations exist
+### observations 
 ExistDATA=true
-# directory for observations
+# if exist provide path, otherwise ignore
 DATA_DIR="$seisDD/GJI2016/Exp1/data"
 
-#########################################  models ###################################################################
-isotropy=true
-attenuation=false
-anisotropy=false
-target_velocity_dir=''
-target_attenuation_file=''
-target_anisotropy_file=''
+### model paths
+target_velocity_dir=" "
 initial_velocity_dir="$seisDD/GJI2016/Exp1/model_init_bin"
-initial_attenuation_file=''
-initial_anisotropy_file=''
 
-
-######################################### forward modeling information ############################################### 
+### forward modeling
 # number of samples in data
 NSTEP=4800
 # sample rate
 deltat=0.06 #s  
-f0=0.084
-t0=0.0
+f0=0.0084
 # number of receivers
 NREC=2
 # number of sources
 NSRC=1
-######################################### Adjoint/Inversion information ############################################### 
+# measurement (x,y,z,p)
+data_list='y'
+
+### kernel construction
 # measurement type (CC WD ET ED IP MT MA) 
 measurement_list=CC
 # misfit_type (AD, DD, AD+DD)
@@ -55,57 +50,28 @@ misfit_type_list=DD
 # similarity threshold for DD 
 cc_threshold=0.90
 
-# inversion parameters (kernels)
-sensitivity=false
+## inversion parameters
 kernel_list='beta_kernel'
 precond=false
 precond_list='hessian2_kernel'
 model_list='vs'
-data_list='y'
 
 # optimization(SD CG QN)
 opt_scheme=QN
-# periodic CG steps (only valid when opt_scheme=CG)
-CGSTEPMAX=10
-# CG scheme (PR ...; only valid when opt_scheme=CG)
-CG_scheme=PR
-# BFGS previous steps invloved (only valid when opt_scheme=QN)
-BFGS_STEPMAX=4
 
 # iteration limit
 iter_start=1
 iter_end=1
-# line search method 
-backtracking=false
-# line search step length
-initial_step_length=0.04
-# min line search step length
-min_step_length=0.01
-max_step=5
 
-######################################### preprocessing information ############################################### 
-## wavelet transform (scale)
+### preprocessing
 Wscale=0
-wavelet_path=''
+wavelet_path="$seisDD/seisDD/lib/WT_basis"
 
-## window
 is_window=1
-window_type=3 
 Vmin=3100
 Vmax=3900
 
-## laplace damping 
-is_laplace=0
-X_decay=0  # offset from source that decays to e-1 (unit: m)
-T_decay=0  # time that decays to e-1  (unit: s)
-
-## mute far/near offset
-mute_near=0
-offset_near=0
-mute_far=0
-offset_far=0
-
-######################################### postprocessing information ############################################### 
+### postprocessing
 # smooth
 smooth=true
 sigma_x=15000
