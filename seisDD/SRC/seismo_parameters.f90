@@ -61,6 +61,10 @@ REAL(KIND=CUSTOM_REAL), PARAMETER :: lambda=Vmax/f0
 REAL(KIND=CUSTOM_REAL), PARAMETER :: wavenumber=2.0*pi/lambda
 REAL(KIND=CUSTOM_REAL), PARAMETER :: omega=2*pi*f0
 
+!! measurement type weight 
+INTEGER, PARAMETER :: mtype=MAX_MISFIT_TYPE
+REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=1
+
 !! sensitivity
 LOGICAL :: sensitivity=.false.
 

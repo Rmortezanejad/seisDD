@@ -489,6 +489,11 @@ subroutine Absolute_diff()
     s = 0.0_CUSTOM_REAL
 
     call split_string(measurement_list,delimiter,measurement_types,ntype)
+    if(ntype>mtype) then 
+        print*,'number of measurement_types exceeds number of measurement_weight: ',&
+            ntype, mtype
+        stop
+    endif
 
     do irec=1,nrec_proc
 
@@ -535,13 +540,14 @@ subroutine Absolute_diff()
         misfit_value,adj) 
 
     ! sum over itype of misfit and adjoint
-    misfit_trace = misfit_trace + misfit_value**2
+    misfit_trace = misfit_trace + misfit_value**2*measurement_weight(itype)
     if(DISPLAY_DETAILS .and. compute_adjoint) then
         print*,'misfit_',trim(measurement_type),'_AD=',misfit_value
         print*,'squared misfit_',trim(measurement_type),'_AD=',misfit_value**2
+        print*,'measurement_weight=',measurement_weight(itype)
     endif
 
-    if(compute_adjoint) adj_trace = adj_trace + adj
+    if(compute_adjoint) adj_trace = adj_trace + adj*measurement_weight(itype)
 
     enddo !itype
 

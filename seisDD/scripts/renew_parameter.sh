@@ -78,6 +78,12 @@ if [ ! -z "$offset_far" ]; then
     sed -e "s#^REAL(KIND=CUSTOM_REAL) :: offset_far=.*#REAL(KIND=CUSTOM_REAL) :: offset_far=${offset_far} #g"  $FILE > temp;  mv temp $FILE
 fi
 
+# measurement type weight 
+if [ ! -z "$measurement_weight" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: mtype=.*#INTEGER, PARAMETER :: mtype=${#measurement_weight[*]}#g"  $FILE > temp;  mv temp $FILE
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=.*#REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=[${measurement_weight[*]}]#g"  $FILE > temp;  mv temp $FILE
+fi
+
 # MISFIT
 sed -e "s#^CHARACTER (LEN=20) :: solver=.*#CHARACTER (LEN=20) :: solver='$solver'#g"  $FILE > temp;  mv temp $FILE
 sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: cc_threshold=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: cc_threshold=${cc_threshold} #g"  $FILE > temp;  mv temp $FILE
