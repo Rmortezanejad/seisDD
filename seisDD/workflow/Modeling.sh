@@ -24,8 +24,7 @@ export SUBMIT_RESULT="$SUBMIT_DIR/RESULTS/$job/Scale${Wscale}_${measurement_list
 if [ -z "$working_path" ]; then
     export working_path=$SUBMIT_DIR
 fi
-export WORKING_DIR="$working_path/$Job_title/specfem/"  # directory on local nodes, where specfem runs
-export DISK_DIR="$working_path/$Job_title/output/"      # temporary directory for data/model/gradient ...
+export WORKING_DIR="$working_path/$Job_title/"  # directory on local nodes, where specfem runs
 
 echo "Submit job << $Job_title >> in : $SUBMIT_DIR  "
 echo "Working directory: $WORKING_DIR"
@@ -34,15 +33,12 @@ echo "FINAL results in :  $SUBMIT_RESULT"
 STARTTIME=$(date +%s)
 echo "start time is :  $(date +"%T")"
 
-rm -rf $WORKING_DIR
-mkdir -p $WORKING_DIR
-
 if $ReStart; then
     echo
     echo "Re-Starting job ..." 
-    echo "Clean up result/DISK directories ..."
-    rm -rf $SUBMIT_RESULT $DISK_DIR
-    mkdir -p $SUBMIT_RESULT $DISK_DIR
+    echo "Clean up result/working directories ..."
+    rm -rf $SUBMIT_RESULT $WORKING_DIR
+    mkdir -p $SUBMIT_RESULT $WORKING_DIR
 else
     echo
     echo "Continue with current job ..."

@@ -24,8 +24,7 @@ export SUBMIT_RESULT="$SUBMIT_DIR/RESULTS/$job/Scale${Wscale}_${measurement_list
 if [ -z "$working_path" ]; then
     export working_path=$SUBMIT_DIR
 fi
-export WORKING_DIR="$working_path/$Job_title/specfem/"  # directory on local nodes, where specfem runs
-export DISK_DIR="$working_path/$Job_title/output/"      # temporary directory for data/model/gradient ...
+export WORKING_DIR="$working_path/$Job_title"  # directory on local nodes, where specfem runs
 
 echo "Submit job << $Job_title >> in : $SUBMIT_DIR  "
 echo "Working directory: $WORKING_DIR"
@@ -35,23 +34,22 @@ echo "FINAL results in :  $SUBMIT_RESULT"
 STARTTIME=$(date +%s)
 echo "start time is :  $(date +"%T")"
 
-rm -rf $WORKING_DIR
-mkdir -p $WORKING_DIR
-
 if $ReStart; then
     echo
     echo "Re-Starting job ..." 
-    echo "Clean up result/DISK directories ..."
-    rm -rf $SUBMIT_RESULT $DISK_DIR
-    mkdir -p $SUBMIT_RESULT $DISK_DIR
+    echo "Clean up result directories ..."
+    rm -rf $SUBMIT_RESULT $WORKING_DIR
+    mkdir -p $SUBMIT_RESULT $WORKING_DIR
 
     echo "prepare starting model ..."
-    cp -r $initial_velocity_dir    $DISK_DIR/m_current
+    cp -r $initial_velocity_dir    $SUBMIT_RESULT/m_current
 
 else
     echo
     echo "Continue with current job ..."
-fi 
+    mkdir -p $SUBMIT_RESULT $WORKING_DIR
+
+fi
 
 echo
 echo "********************************************************************************************************"
@@ -68,7 +66,10 @@ elif [ $system == 'pbs' ]; then
     pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
 fi
 
-cp -Rf $DISK_DIR/m_current   $SUBMIT_RESULT/m_$(($iter_start-1))
+if [ -d "$SUBMIT_RESULT/m_$(($iter_start-1))" ]; then
+    rm -rf $SUBMIT_RESULT/m_$(($iter_start-1))
+fi
+cp -r $SUBMIT_RESULT/m_current   $SUBMIT_RESULT/m_$(($iter_start-1))
 
 # iteration loop
 for (( iter=$iter_start;iter<=$iter_end;iter++ ))
@@ -81,7 +82,7 @@ do
     echo "          ***************************************"
 
     echo "Forward/Adjoint simulation for current model ...... "
-    velocity_dir=$DISK_DIR/m_current
+    velocity_dir=$SUBMIT_RESULT/m_current
     compute_adjoint=true
     if [ $system == 'slurm' ]; then
         srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_current_$iter
@@ -91,12 +92,12 @@ do
 
     echo
     echo "sum data misfit ...... "
-    mkdir -p $DISK_DIR/data_misfit
+    mkdir -p $SUBMIT_RESULT/data_misfit
     step_length=0.0
-    ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $DISK_DIR 2> ./job_info/error_sum_misfit_$iter
+    ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_sum_misfit_$iter
 
 
-    file=$DISK_DIR/data_misfit/search_status.dat
+    file=$SUBMIT_RESULT/data_misfit/search_status.dat
     is_cont=$(awk -v "line=1" 'NR==line { print $1 }' $file)
     is_done=$(awk -v "line=2" 'NR==line { print $1 }' $file)
     is_brak=$(awk -v "line=3" 'NR==line { print $1 }' $file)
@@ -110,28 +111,36 @@ do
 
     echo 
     echo "sum event kernel ...... "
-    mkdir -p $DISK_DIR/misfit_kernel
-    mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_list $WORKING_DIR $DISK_DIR 2> ./job_info/error_sum_kernel_$iter
+    mkdir -p $SUBMIT_RESULT/misfit_kernel
+    if [ $solver == 'specfem2D' ]; then
+        cp -r $SUBMIT_RESULT/m_current/proc*_NSPEC_ibool.bin $SUBMIT_RESULT/misfit_kernel/
+    fi
+    mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_list $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_sum_kernel_$iter
 
 
     if $smooth ; then
         echo 
         echo "smooth misfit kernel ... "
-        if [ $solver == 'specfem3D' ];
+        # prepare necessary files for kernel smoothing
+        if [ $solver == 'specfem2D' ]; then
+            cp -r $SUBMIT_RESULT/m_current/proc*_x.bin $SUBMIT_RESULT/misfit_kernel/
+            cp -r $SUBMIT_RESULT/m_current/proc*_z.bin $SUBMIT_RESULT/misfit_kernel/
+            cp -r $SUBMIT_RESULT/m_current/proc*_jacobian.bin $SUBMIT_RESULT/misfit_kernel/
+        elif [ $solver == 'specfem3D' ];
         then
             rm -rf OUTPUT_FILES
             mkdir OUTPUT_FILES
             mkdir OUTPUT_FILES/DATABASES_MPI
-            cp $DISK_DIR/misfit_kernel/proc*external_mesh.bin OUTPUT_FILES/DATABASES_MPI/
+            cp $SUBMIT_RESULT/misfit_kernel/proc*external_mesh.bin OUTPUT_FILES/DATABASES_MPI/
         fi
 
-        mpirun -np $NPROC_SPECFEM ./bin/xsmooth_sem $smooth_x $smooth_z $kernel_list,$precond_list  $DISK_DIR/misfit_kernel/ $DISK_DIR/misfit_kernel/ $GPU_MODE 2> ./job_info/error_smooth_kernel_$iter
+        mpirun -np $NPROC_SPECFEM ./bin/xsmooth_sem $smooth_x $smooth_z $kernel_list,$precond_list  $SUBMIT_RESULT/misfit_kernel/ $SUBMIT_RESULT/misfit_kernel/ $GPU_MODE 2> ./job_info/error_smooth_kernel_$iter
     fi
 
     echo 
     echo "optimization --> gradient/direction ... "
-    mkdir -p $DISK_DIR/optimizer
-    ./bin/optimization.exe $NPROC_SPECFEM $DISK_DIR $kernel_list $precond_list  $model_list $iter 2> ./job_info/error_optimizer_$iter
+    mkdir -p $SUBMIT_RESULT/optimizer
+    ./bin/optimization.exe $NPROC_SPECFEM $SUBMIT_RESULT $kernel_list $precond_list  $model_list $iter 2> ./job_info/error_optimizer_$iter
 
     echo
     echo 'line search along the update direction ......'
@@ -148,12 +157,12 @@ do
 
         echo 
         echo "update model ... "
-        mkdir -p $DISK_DIR/m_try
-        ./bin/model_update.exe $NPROC_SPECFEM $DISK_DIR $model_list $step_length 2> ./job_info/error_update_model_$iter
+        mkdir -p $SUBMIT_RESULT/m_try
+        ./bin/model_update.exe $NPROC_SPECFEM $SUBMIT_RESULT $model_list $step_length 2> ./job_info/error_update_model_$iter
 
         echo
         echo "Forward simulation for update model ...... "
-        velocity_dir=$DISK_DIR/m_try
+        velocity_dir=$SUBMIT_RESULT/m_try
         compute_adjoint=false
         if [ $system == 'slurm' ]; then
             srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_update_$iter
@@ -163,10 +172,10 @@ do
 
         echo
         echo "sum data misfit ...... "
-        mkdir -p $DISK_DIR/data_misfit
-        ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM  $DISK_DIR 2> ./job_info/error_sum_misfit
+        mkdir -p $SUBMIT_RESULT/data_misfit
+        ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_sum_misfit
 
-        file=$DISK_DIR/data_misfit/search_status.dat
+        file=$SUBMIT_RESULT/data_misfit/search_status.dat
         is_cont=$(awk -v "line=1" 'NR==line { print $1 }' $file)
         is_done=$(awk -v "line=2" 'NR==line { print $1 }' $file)
         is_brak=$(awk -v "line=3" 'NR==line { print $1 }' $file)
@@ -177,9 +186,9 @@ do
         if [ $is_done -eq 1 ]; then
             echo 
             echo "final model optimal_step_length=$optimal_step_length"
-            ./bin/model_update.exe $NPROC_SPECFEM $DISK_DIR $model_list $optimal_step_length 2> ./job_info/error_update_model
-            cp $DISK_DIR/m_try/proc* $DISK_DIR/m_current/
-            cp -r  $DISK_DIR/m_current   $SUBMIT_RESULT/m_$iter
+            ./bin/model_update.exe $NPROC_SPECFEM $SUBMIT_RESULT $model_list $optimal_step_length 2> ./job_info/error_update_model
+            cp $SUBMIT_RESULT/m_try/proc* $SUBMIT_RESULT/m_current/
+            cp -r  $SUBMIT_RESULT/m_current   $SUBMIT_RESULT/m_$iter
             break 
         fi
 
@@ -198,9 +207,9 @@ do
 
     echo 
     echo "prepare for next iteration ..."
-    cp -r  $DISK_DIR/optimizer/g_new.bin $DISK_DIR/optimizer/g_old.bin
-    cp -r  $DISK_DIR/optimizer/p_new.bin $DISK_DIR/optimizer/p_old.bin
-    cp -r  $DISK_DIR/optimizer/m_new.bin $DISK_DIR/optimizer/m_old.bin
+    cp -r  $SUBMIT_RESULT/optimizer/g_new.bin $SUBMIT_RESULT/optimizer/g_old.bin
+    cp -r  $SUBMIT_RESULT/optimizer/p_new.bin $SUBMIT_RESULT/optimizer/p_old.bin
+    cp -r  $SUBMIT_RESULT/optimizer/m_new.bin $SUBMIT_RESULT/optimizer/m_old.bin
 
     echo 
     echo "******************finish iteration $iter for ${misfit_type_list} $job ************"
@@ -210,7 +219,6 @@ echo
 echo "******************finish all iterations for ${misfit_type_list} $job *************"
 
 cp -r $SUBMIT_DIR/parameter $SUBMIT_RESULT/
-cp -r $DISK_DIR/data_misfit $SUBMIT_RESULT/
 cp -r $SUBMIT_DIR/job_info/output $SUBMIT_RESULT/
 
 echo

@@ -54,7 +54,7 @@ do
         SAVE_FORWARD=false
     fi
     sh $SCRIPTS_DIR/Forward_${solver}.sh $isource $NPROC_SPECFEM $data_tag $data_list \
-        $velocity_dir $SAVE_FORWARD $WORKING_DIR $DISK_DIR $DATA_DIR $job 2>./job_info/error_Forward_simulation
+        $velocity_dir $SAVE_FORWARD $WORKING_DIR $DATA_DIR $job 2>./job_info/error_Forward_simulation
      if [ $isource -eq 1 ] && $compute_adjoint ; then
          ENDTIME=$(date +%s)
          Ttaken=$(($ENDTIME - $STARTTIME))
@@ -64,7 +64,7 @@ do
     # STEP two -- adjoint source
     STARTTIME=$(date +%s)
     sh $SCRIPTS_DIR/adjoint_source.sh $isource $NPROC_SPECFEM $compute_adjoint $data_list \
-        $measurement_list $misfit_type_list $WORKING_DIR $DISK_DIR $Wscale $wavelet_path 2>./job_info/error_adj_source
+        $measurement_list $misfit_type_list $WORKING_DIR $Wscale $wavelet_path 2>./job_info/error_adj_source
      if [ $isource -eq 1 ] && $compute_adjoint ; then
          ENDTIME=$(date +%s)
          Ttaken=$(($ENDTIME - $STARTTIME))
@@ -78,7 +78,7 @@ do
         data_tag='SEM'
         SAVE_FORWARD=false
         sh $SCRIPTS_DIR/Adjoint_${solver}.sh $isource $NPROC_SPECFEM $data_tag \
-            $velocity_dir $SAVE_FORWARD $WORKING_DIR $DISK_DIR 2>./job_info/error_Adjoint_simulation
+            $velocity_dir $SAVE_FORWARD $WORKING_DIR 2>./job_info/error_Adjoint_simulation
     fi
      if [ $isource -eq 1 ] && $compute_adjoint ; then
          ENDTIME=$(date +%s)

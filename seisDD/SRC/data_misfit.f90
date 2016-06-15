@@ -6,14 +6,14 @@ program data_misfit
     implicit none
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer, parameter :: NARGS = 5
+    integer, parameter :: NARGS = 6
     INTEGER :: isrc,iter
     INTEGER :: NPROC_DATA 
     INTEGER :: i,j
     INTEGER :: ier
     real(kind=CUSTOM_REAL) :: misfit_cur
     character(len=MAX_STRING_LEN) :: arg(NARGS)
-    character(len=MAX_STRING_LEN) :: directory
+    character(len=MAX_STRING_LEN) :: input_dir,output_dir
     character(len=MAX_FILENAME_LEN) :: FILENAME
 
     ! parse command line arguments
@@ -27,26 +27,27 @@ program data_misfit
     read(arg(1),*) iter
     read(arg(2),*) step_length
     read(arg(3),*) compute_adjoint
-    read(arg(4),*) NPROC_DATA 
-    directory=arg(5)
+    read(arg(4),*) NPROC_DATA
+    input_dir=arg(5) 
+    output_dir=arg(6)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! sum event_misfit
-    call sum_misfit(directory,misfit_cur,NPROC_DATA)
+    call sum_misfit(input_dir,misfit_cur,NPROC_DATA)
     !!! add current result to search history
-    write(filename, "(a,i2.2)") trim(directory)//'/data_misfit/data_misfit_hist_iter',iter
+    write(filename, "(a,i2.2)") trim(output_dir)//'/data_misfit/data_misfit_hist_iter',iter
     OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
     write(IOUT,'(f15.5,e15.5)') step_length,misfit_cur
     close(IOUT)
 
     ! check search status 
     if (.not.compute_adjoint) then 
-        call check_linesearch(directory,iter) 
+        call check_linesearch(output_dir,iter) 
 
     else
         if(iter==1)  then
             !!! misfit hist for iteration 
-            write(filename,'(a)') trim(directory)//'/data_misfit/data_misfit_hist.dat'
+            write(filename,'(a)') trim(output_dir)//'/data_misfit/data_misfit_hist.dat'
             OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
             write(IOUT,'(I5,e15.5)') iter-1,misfit_cur
             close(IOUT)
@@ -57,12 +58,12 @@ program data_misfit
         is_brak=0
         next_step_length=initial_step_length
         optimal_step_length=0.0    
-        call check_iteration(directory)
+        call check_iteration(output_dir)
 
     endif ! compute_adjoint
 
     !! SAVE search status
-    write(filename,'(a)') trim(directory)//'/data_misfit/search_status.dat'
+    write(filename,'(a)') trim(output_dir)//'/data_misfit/search_status.dat'
     OPEN (IOUT, FILE=trim(filename))
     write(IOUT,'(I5)') is_cont
     write(IOUT,'(I5)') is_done

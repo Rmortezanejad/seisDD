@@ -7,9 +7,8 @@ data_list=$4
 velocity_dir=$5
 SAVE_FORWARD=$6
 WORKING_DIR=$7
-DISK_DIR=$8
-DATA_DIR=$9
-job=${10}
+DATA_DIR=$8
+job=$9
 
 if [ $isource -eq 1 ] ; then
     echo "SPECFEM2D Forward Modeling ..."
@@ -19,13 +18,12 @@ if [ $isource -eq 1 ] ; then
     echo "velocity_dir=$velocity_dir"
     echo "SAVE_FORWARD=$SAVE_FORWARD"
     echo "WORKING_DIR=$WORKING_DIR"
-    echo "DISK_DIR=$DISK_DIR"
     echo "DATA_DIR=$DATA_DIR"
     echo "job=$job"
 fi
 
 ISRC_WORKING_DIR=$( seq --format="$WORKING_DIR/%06.f/" $(($isource-1)) $(($isource-1)) ) # working directory (on local nodes, where specfem runs)
-ISRC_DATA_DIR=$( seq --format="$DISK_DIR/%06.f/" $(($isource-1)) $(($isource-1)) )/$data_tag
+ISRC_DATA_DIR=$ISRC_WORKING_DIR/$data_tag
 
 mkdir -p $ISRC_WORKING_DIR $ISRC_DATA_DIR
 
@@ -39,8 +37,8 @@ cp -r $SUBMIT_DIR/DATA ./
 if [ -d "$SUBMIT_DIR/SU_process" ]; then
     cp -r $SUBMIT_DIR/SU_process ./
 fi
-# if velocity_dir exist and not empty
-if [ "$(ls -A $velocity_dir)" ]; then
+# if velocity_dir exist
+if [ -d "$velocity_dir" ]; then
     cp $velocity_dir/* DATA/
 fi
 
