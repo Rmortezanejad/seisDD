@@ -10,8 +10,7 @@ source ~/.bashrc
 echo $seisDD
 # make sure $seisDD is the same as '/path/to/seisDD' 
 
-# with this specfem2d, I added an example of using tomo
-# file to input attentuaton model
+# with this specfem2d, I added an example of using tomo file to input attentuaton model
 # compile with ifort and mpi
 module load intel-mkl/11.0/1/64
 module load intel/13.0/64/13.0.1.117
@@ -34,7 +33,7 @@ make -f make_lib
 #YO Yuan, FJ Simons, J Tromp
 #Geophysical Journal International (2016) accepted for publication
 cd $seisDD/GJI2016
-# refer to $seisDD/GJI2016/readme for details
+# For details, refer to https://github.com/yanhuay/seisDD/tree/master/GJI2016
 
 #
 # Addtional comments

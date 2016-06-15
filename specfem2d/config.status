@@ -662,12 +662,12 @@ S["ac_ct_CC"]="gcc"
 S["CPPFLAGS"]=""
 S["CFLAGS"]="-g -O2"
 S["CC"]="gcc"
-S["FCLIBS"]=" -L/usr/local/hdf5/intel-12.1/openmpi-1.6.3/1.8.12/lib64 -L/opt/intel/composer_xe_2013.1.117/mkl/lib/intel64 -L/opt/intel/composer_xe_2013.1.117/com"\
-"piler/lib/intel64 -L/usr/local/intel/lib64 -L/usr/local/hdf5/intel-12.1/openmpi-1.6.3/1.8.12/lib64/../lib64 -L/usr/local/hdf5/intel-12.1/openmpi-1.6"\
+S["FCLIBS"]=" -L/usr/local/hdf5/intel-12.1/openmpi-1.6.3/1.8.12/lib64 -L/usr/local/intel/lib64 -L/opt/intel/composer_xe_2013.1.117/compiler/lib/intel64 -L/opt/in"\
+"tel/composer_xe_2013.1.117/mkl/lib/intel64 -L/usr/local/hdf5/intel-12.1/openmpi-1.6.3/1.8.12/lib64/../lib64 -L/usr/local/hdf5/intel-12.1/openmpi-1.6"\
 ".3/1.8.12/lib64/../lib64/ -L/usr/local/intel/lib64/../lib64 -L/usr/local/intel/lib64/../lib64/ -L/usr/lib/gcc/x86_64-redhat-linux/4.4.7/ -L/usr/lib/"\
 "gcc/x86_64-redhat-linux/4.4.7/../../../../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/4.4.7/../../../../lib64/ -L/lib/../lib64 -L/lib/../lib64/ -L/usr/"\
-"lib/../lib64 -L/usr/lib/../lib64/ -L/usr/local/hdf5/intel-12.1/openmpi-1.6.3/1.8.12/lib64/ -L/opt/intel/composer_xe_2013.1.117/mkl/lib/intel64/ -L/o"\
-"pt/intel/composer_xe_2013.1.117/compiler/lib/intel64/ -L/usr/local/intel/lib64/ -L/usr/lib/gcc/x86_64-redhat-linux/4.4.7/../../../ -L/lib64 -L/lib/ "\
+"lib/../lib64 -L/usr/lib/../lib64/ -L/usr/local/hdf5/intel-12.1/openmpi-1.6.3/1.8.12/lib64/ -L/usr/local/intel/lib64/ -L/opt/intel/composer_xe_2013.1"\
+".117/compiler/lib/intel64/ -L/opt/intel/composer_xe_2013.1.117/mkl/lib/intel64/ -L/usr/lib/gcc/x86_64-redhat-linux/4.4.7/../../../ -L/lib64 -L/lib/ "\
 "-L/usr/lib64 -L/usr/lib -lifport -lifcore -limf -lsvml -lm -lipgo -lirc -lpthread -lirc_s -ldl"
 S["host_os"]="linux-gnu"
 S["host_vendor"]="unknown"

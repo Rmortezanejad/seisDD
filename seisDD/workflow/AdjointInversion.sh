@@ -69,6 +69,7 @@ elif [ $system == 'pbs' ]; then
 fi
 
 cp -Rf $DISK_DIR/m_current   $SUBMIT_RESULT/m_$(($iter_start-1))
+
 # iteration loop
 for (( iter=$iter_start;iter<=$iter_end;iter++ ))
 do

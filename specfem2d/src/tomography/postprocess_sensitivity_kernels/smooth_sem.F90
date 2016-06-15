@@ -434,7 +434,7 @@ do iker= 1, nker
 
   open(IOUT,file=trim(ks_file),status='unknown',form='unformatted',iostat=ier)
   if (ier /= 0) stop 'Error opening smoothed kernel file'
-  write(IOUT) dat_smooth(:,:,:,iker) * zstore_me(:,:,:)**0.1
+  write(IOUT) dat_smooth(:,:,:,iker) * zstore_me(:,:,:)**0.0
   close(IOUT)
   if (myrank == 0) print *,'SAVE smooth kernel -- ',trim(ks_file)
 enddo
