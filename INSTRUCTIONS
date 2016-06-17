@@ -38,13 +38,14 @@ cd $seisDD/GJI2016
 #
 # Addtional comments
 # How to start a new project 
-# checklist:
-# DATA/: Par_file, interfaces.dat, SOURCE, sources.dat STATION
+# checklist (see GJI2016/Exp1 for demonstration):
+# DATA/: interfaces.dat  Par_file  SOURCE  sources.dat  STATIONS 
 # model_init_bin: initial gll binary model 
-# model_trye_bin: target gll binary model (optional if observed data exist)
-# data: obaserved data (optional if model_true_bin esists)
+# model_true_bin: target gll binary model (optional if observed data exist)
+# data: obaserved data (optional if model_true_bin exists)
 # parameter: inversion parameter file including path setting and inversion parameters
 # SU_process: preprocessing procedure using SU package (optional)
+# run_this_example.sh (shared for all examples)
 #
 # How to prepare gll model
 # 1. prepare tomo model on regular grids
