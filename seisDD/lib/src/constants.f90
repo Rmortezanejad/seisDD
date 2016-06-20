@@ -61,7 +61,7 @@ real(kind=CUSTOM_REAL), parameter :: REVERSE_FFT=-1.0
 real(kind=CUSTOM_REAL), parameter :: CUTOFF=PI
 ! water level for effective spectrum 
 real(kind=CUSTOM_REAL), parameter :: WTR=0.05
-real(kind=CUSTOM_REAL), parameter ::wtr_env=0.05
+real(kind=CUSTOM_REAL), parameter :: wtr_env=0.05
 ! water level for mtm 
 real(kind=CUSTOM_REAL), parameter ::wtr_mtm=1.e-10
 ! multitaper
