@@ -48,6 +48,7 @@ cd $seisDD/GJI2016
 # run_this_example.sh (shared for all examples)
 #
 # How to prepare gll model
+# see specfem2d/EXAMPLES for demo
 # 1. prepare tomo model on regular grids
   !
   ! ORIGIN_X ORIGIN_Z END_X END_Z
