@@ -27,7 +27,7 @@ specfem2d/EXAMPLES/
 seisDD/lib/*
 !seisDD/lib/src
 
-# customers' addtional EXAMPLES
+# user private EXAMPLES folder
 EXAMPLES/*
 !EXAMPLES/readme
 
