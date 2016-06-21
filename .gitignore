@@ -26,3 +26,14 @@ specfem2d/EXAMPLES/
 # lib 
 seisDD/lib/*
 !seisDD/lib/src
+
+# customers' addtional EXAMPLES
+EXAMPLES/*
+!EXAMPLES/readme
+
+# GJI2016 
+GJI2016/Exp1/sumbit_job
+GJI2016/Exp2/sumbit_job
+GJI2016/Exp3/sumbit_job
+GJI2016/Exp4/sumbit_job
+GJI2016/Exp5/sumbit_job
