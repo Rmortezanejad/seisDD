@@ -1,14 +1,26 @@
-
+## specfem2d
+# Configure time
+specfem2d/aclocal.m4
+specfem2d/autom4te.cache
+specfem2d/config.log
+specfem2d/config.status
+specfem2d/Makefile
+specfem2d/setup/config.h
+specfem2d/setup/constants.h
+specfem2d/setup/precision.h
 # Build time
-specfem2d/*
 specfem2d/obj/*
 specfem2d/mod/*
 specfem2d/bin/*
 specfem2d/*.mod
 specfem2d/*__genmod.f90
-
 # Trash files
 specfem2d/.*swp
 specfem2d/.*swo
 specfem2d/*~
+# scotch 
+specfem2d/src/meshfem2D/scotch_5.1.12b/
 
+# lib 
+seisDD/lib/*
+!seisDD/lib/src
