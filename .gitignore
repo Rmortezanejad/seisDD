@@ -20,6 +20,8 @@ specfem2d/.*swo
 specfem2d/*~
 # scotch 
 specfem2d/src/meshfem2D/scotch_5.1.12b/
+#EXAMPLES
+specfem2d/EXAMPLES/
 
 # lib 
 seisDD/lib/*
