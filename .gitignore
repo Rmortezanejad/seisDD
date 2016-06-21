@@ -1,0 +1,14 @@
+
+# Build time
+specfem2d/*
+specfem2d/obj/*
+specfem2d/mod/*
+specfem2d/bin/*
+specfem2d/*.mod
+specfem2d/*__genmod.f90
+
+# Trash files
+specfem2d/.*swp
+specfem2d/.*swo
+specfem2d/*~
+

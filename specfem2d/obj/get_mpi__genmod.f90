@@ -1,7 +1,0 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Jun 14 13:40:15 2016
-        MODULE GET_MPI__genmod
-          INTERFACE 
-            SUBROUTINE GET_MPI
-            END SUBROUTINE GET_MPI
-          END INTERFACE 
-        END MODULE GET_MPI__genmod

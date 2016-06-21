@@ -1,9 +1,0 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Jun 14 13:38:48 2016
-        MODULE IDAYWK__genmod
-          INTERFACE 
-            FUNCTION IDAYWK(JDAYNO)
-              INTEGER(KIND=4), INTENT(IN) :: JDAYNO
-              INTEGER(KIND=4) :: IDAYWK
-            END FUNCTION IDAYWK
-          END INTERFACE 
-        END MODULE IDAYWK__genmod
