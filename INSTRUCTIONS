@@ -37,7 +37,7 @@ cd $seisDD/GJI2016
 
 #
 # Addtional comments
-# How to start your own project in user private projects under EXAMPLES (not afftected in updating)
+# How to start your own project in user private folder under EXAMPLES (not afftected in updating)
 >> cd $seisDD/EXAMPLES 
 # checklist (see GJI2016/Exp1 for demonstration):
 # DATA/: interfaces.dat  Par_file  SOURCE  sources.dat  STATIONS 
