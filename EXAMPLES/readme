@@ -2,8 +2,8 @@ Thanks for using our released open source software <<seisDD>>
 ``DOUBLE-DIFFERENCE ADJOINT FULL-WAVEFORM SEISMIC TOMOGRAPHY''
 
 You are now free to start your own projects under EXAMPLES/
-INSTRUCTIONS: https://github.com/yanhuay/seisDD/blob/master/INSTRUCTIONS
-Any questions feel free to contact me at yanhuay@princeton.edu
+[FOLLOW INSTRUCTIONS](INSTRUCTIONS)
+Any questions feel free to [contact me](yanhuay@princeton.edu)
 
 Please kindly acknowledge our open source https://github.com/yanhuay/seisDD
 and cite our publications using this very computing software:
