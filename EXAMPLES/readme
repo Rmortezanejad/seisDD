@@ -1,8 +1,8 @@
-Thanks for using our released open source software seisDD 
+Thanks for using our released open source software <<seisDD>> 
 ``DOUBLE-DIFFERENCE ADJOINT FULL-WAVEFORM SEISMIC TOMOGRAPHY''
 
 You are now free to start your own projects under EXAMPLES/
-
+INSTRUCTIONS: https://github.com/yanhuay/seisDD/blob/master/INSTRUCTIONS
 Any questions feel free to contact me at yanhuay@princeton.edu
 
 Please kindly acknowledge our open source https://github.com/yanhuay/seisDD
@@ -12,12 +12,12 @@ Yuan Y.O., F. J. Simons and J. Tromp.
 Double-difference adjoint seismic tomography.
 Geophysical Journal International, 2016. In the press (doi: 10.1093/gji/ggw233).
 
-Yuan Y.O., F. J. Simons and E. Bozdaˇg.
+Yuan Y.O., F. J. Simons and E. Bozdag.
 Multiscale adjoint tomography using surface and body waves.
 Geophysics, 80(5): R281-R302, 2015.
 http://dx.doi.org/10.1190/geo2014-0461.1
 
-Yuan Y.O., F. J. Simons and E. Bozdaˇg.
+Yuan Y.O., F. J. Simons and E. Bozdag.
 Full-waveform adjoint tomography in a multiscale perspective.
 SEG Technical Program Expanded Abstracts, 1194-1199, 2014.
 http://dx.doi.org/10.1190/segam2014-0816.1
