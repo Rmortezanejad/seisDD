@@ -43,12 +43,10 @@ if $ReStart; then
 
     echo "prepare starting model ..."
     cp -r $initial_velocity_dir    $SUBMIT_RESULT/m_current
-
 else
     echo
     echo "Continue with current job ..."
     mkdir -p $SUBMIT_RESULT $WORKING_DIR
-
 fi
 
 echo
@@ -96,7 +94,6 @@ do
     step_length=0.0
     ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_sum_misfit_$iter
 
-
     file=$SUBMIT_RESULT/data_misfit/search_status.dat
     is_cont=$(awk -v "line=1" 'NR==line { print $1 }' $file)
     is_done=$(awk -v "line=2" 'NR==line { print $1 }' $file)
@@ -112,28 +109,23 @@ do
     echo 
     echo "sum event kernel ...... "
     mkdir -p $SUBMIT_RESULT/misfit_kernel
+    # prepare necessary files for kernel sum and smoothing
     if [ $solver == 'specfem2D' ]; then
         cp -r $SUBMIT_RESULT/m_current/proc*_NSPEC_ibool.bin $SUBMIT_RESULT/misfit_kernel/
+        cp -r $SUBMIT_RESULT/m_current/proc*_jacobian.bin $SUBMIT_RESULT/misfit_kernel/ 
+        cp -r $SUBMIT_RESULT/m_current/proc*_x.bin $SUBMIT_RESULT/misfit_kernel/                    
+        cp -r $SUBMIT_RESULT/m_current/proc*_z.bin $SUBMIT_RESULT/misfit_kernel/
+    elif [ $solver == 'specfem3D' ]; then
+        rm -rf OUTPUT_FILES    
+        mkdir OUTPUT_FILES
+        mkdir OUTPUT_FILES/DATABASES_MPI
+        cp $SUBMIT_RESULT/misfit_kernel/proc*external_mesh.bin OUTPUT_FILES/DATABASES_MPI/
     fi
     mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_list $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_sum_kernel_$iter
-
 
     if $smooth ; then
         echo 
         echo "smooth misfit kernel ... "
-        # prepare necessary files for kernel smoothing
-        if [ $solver == 'specfem2D' ]; then
-            cp -r $SUBMIT_RESULT/m_current/proc*_x.bin $SUBMIT_RESULT/misfit_kernel/
-            cp -r $SUBMIT_RESULT/m_current/proc*_z.bin $SUBMIT_RESULT/misfit_kernel/
-            cp -r $SUBMIT_RESULT/m_current/proc*_jacobian.bin $SUBMIT_RESULT/misfit_kernel/
-        elif [ $solver == 'specfem3D' ];
-        then
-            rm -rf OUTPUT_FILES
-            mkdir OUTPUT_FILES
-            mkdir OUTPUT_FILES/DATABASES_MPI
-            cp $SUBMIT_RESULT/misfit_kernel/proc*external_mesh.bin OUTPUT_FILES/DATABASES_MPI/
-        fi
-
         mpirun -np $NPROC_SPECFEM ./bin/xsmooth_sem $smooth_x $smooth_z $kernel_list,$precond_list  $SUBMIT_RESULT/misfit_kernel/ $SUBMIT_RESULT/misfit_kernel/ $GPU_MODE 2> ./job_info/error_smooth_kernel_$iter
     fi
 
