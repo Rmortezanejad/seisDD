@@ -12,12 +12,14 @@ FILE="$EXE_DIR/seismo_parameters.f90"
 sed -e "s#^Job_title=.*#Job_title=$Job_title #g"  $FILE > temp;  mv temp $FILE
 
 ### solver related parameters
+if [ ! -z "$solver" ]; then
+    sed -e "s#^CHARACTER (LEN=20) :: solver=.*#CHARACTER (LEN=20) :: solver='$solver'#g"  $FILE > temp;  mv temp $FILE
+fi
 if [ "$solver" = "specfem2D" ]; then 
     sed -e "s#^INTEGER, PARAMETER :: NGLLY.*#INTEGER, PARAMETER :: NGLLY=1 #g"  $FILE > temp;  mv temp $FILE
     sed -e "s#^CHARACTER (LEN=MAX_STRING_LEN) :: LOCAL_PATH.*#CHARACTER (LEN=MAX_STRING_LEN) :: LOCAL_PATH='OUTPUT_FILES'  #g"  $FILE > temp;  mv temp $FILE
     sed -e "s#^CHARACTER (LEN=MAX_STRING_LEN) :: IBOOL_NAME.*#CHARACTER (LEN=MAX_STRING_LEN) :: IBOOL_NAME='NSPEC_ibool.bin'  #g"  $FILE > temp;  mv temp $FILE
 fi
-
 if [ "$solver" = "specfem3D" ]; then
     sed -e "s#^INTEGER, PARAMETER :: NGLLY.*#INTEGER, PARAMETER :: NGLLY=5 #g"  $FILE > temp;  mv temp $FILE
     sed -e "s#^CHARACTER (LEN=MAX_STRING_LEN) :: LOCAL_PATH.*#CHARACTER (LEN=MAX_STRING_LEN) :: LOCAL_PATH='OUTPUT_FILES/DATABASES_MPI'  #g"  $FILE > temp;  mv temp $FILE
@@ -25,14 +27,24 @@ if [ "$solver" = "specfem3D" ]; then
 fi
 
 ### FORWARD MODELNG INFO 
-sed -e "s#^INTEGER, PARAMETER :: NSTEP=.*#INTEGER, PARAMETER :: NSTEP=$NSTEP #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: deltat=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: deltat=$deltat #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$NSTEP" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: NSTEP=.*#INTEGER, PARAMETER :: NSTEP=$NSTEP #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$deltat" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: deltat=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: deltat=$deltat #g"  $FILE > temp;  mv temp $FILE
+fi
 if [ ! -z "$t0" ]; then
     sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: t0=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: t0=$t0 #g"  $FILE > temp;  mv temp $FILE
 fi
-sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: f0=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: f0=$f0 #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^INTEGER, PARAMETER :: NREC=.*#INTEGER, PARAMETER :: NREC=$NREC #g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^INTEGER, PARAMETER :: NSRC=.*#INTEGER, PARAMETER :: NSRC=$NSRC #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$f0" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: f0=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: f0=$f0 #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$NREC" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: NREC=.*#INTEGER, PARAMETER :: NREC=$NREC #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$NSRC" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: NSRC=.*#INTEGER, PARAMETER :: NSRC=$NSRC #g"  $FILE > temp;  mv temp $FILE
+fi
 
 ## PRE-PROCESSING
 # wavelet
@@ -84,8 +96,7 @@ if [ ! -z "$measurement_weight" ]; then
     sed -e "s#^REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=.*#REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=[${measurement_weight[*]}]#g"  $FILE > temp;  mv temp $FILE
 fi
 
-# MISFIT
-sed -e "s#^CHARACTER (LEN=20) :: solver=.*#CHARACTER (LEN=20) :: solver='$solver'#g"  $FILE > temp;  mv temp $FILE
+# DD
 if [ ! -z "$cc_threshold" ]; then
     sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: cc_threshold=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: cc_threshold=${cc_threshold} #g"  $FILE > temp;  mv temp $FILE
 fi
@@ -96,7 +107,7 @@ if [ ! -z "$DD_max" ]; then
     sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: DD_max=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: DD_max=${DD_max} #g"  $FILE > temp;  mv temp $FILE
 fi
 
-# INVERSION
+# optimization
 if [ ! -z "$opt_scheme" ]; then
     sed -e "s#^CHARACTER (LEN=2) :: opt_scheme=.*#CHARACTER (LEN=2) :: opt_scheme='$opt_scheme'#g"  $FILE > temp;  mv temp $FILE
 fi
@@ -122,10 +133,24 @@ if [ ! -z "$backtracking" ]; then
     sed -e "s#^LOGICAL :: backtracking=.*#LOGICAL :: backtracking=.$backtracking.#g"  $FILE > temp;  mv temp $FILE
 fi
 
-# POST-PROCESSING
-sed -e "s#^LOGICAL :: smooth=.*#LOGICAL :: smooth=.$smooth.#g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^LOGICAL :: precond=.*#LOGICAL :: precond=.$precond.#g"  $FILE > temp;  mv temp $FILE
+# CONVERGENCE?
+if [ ! -z "$iter_start" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: iter_start=.*#INTEGER, PARAMETER :: iter_start=$iter_start #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$iter_end" ]; then
+    sed -e "s#^INTEGER, PARAMETER :: iter_end=.*#INTEGER, PARAMETER :: iter_end=$iter_end #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$misfit_ratio_initial" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: misfit_ratio_initial=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: misfit_ratio_initial=$misfit_ratio_initial #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$misfit_ratio_previous" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: misfit_ratio_previous=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: misfit_ratio_previous=$misfit_ratio_previous #g"  $FILE > temp;  mv temp $FILE
+fi
 
+# POST-PROCESSING
+if [ ! -z "$smooth" ]; then
+    sed -e "s#^LOGICAL :: smooth=.*#LOGICAL :: smooth=.$smooth.#g"  $FILE > temp;  mv temp $FILE
+fi
 if [ ! -z "$MASK_SOURCE" ]; then
     sed -e "s#^LOGICAL :: MASK_SOURCE=.*#LOGICAL :: MASK_SOURCE=.$MASK_SOURCE.#g"  $FILE > temp;  mv temp $FILE
 fi
@@ -138,6 +163,15 @@ fi
 if [ ! -z "$station_radius" ]; then
     sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: station_radius=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: station_radius=$station_radius #g" $FILE > temp;  mv temp $FILE
 fi
+if [ ! -z "$precond" ]; then
+    sed -e "s#^LOGICAL :: precond=.*#LOGICAL :: precond=.$precond.#g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$wtr_precond" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: wtr_precond=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: wtr_precond=$wtr_precond #g" $FILE > temp;  mv temp $FILE
+fi
 
 ### DISPLAY
-sed -e "s#^LOGICAL :: DISPLAY_DETAILS=.*#LOGICAL :: DISPLAY_DETAILS=.$DISPLAY_DETAILS.#g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$DISPLAY_DETAILS" ]; then
+    sed -e "s#^LOGICAL :: DISPLAY_DETAILS=.*#LOGICAL :: DISPLAY_DETAILS=.$DISPLAY_DETAILS.#g"  $FILE > temp;  mv temp $FILE
+fi
+

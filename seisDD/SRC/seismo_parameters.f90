@@ -55,18 +55,9 @@ REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_near=0
 INTEGER, PARAMETER :: mute_far=0 
 REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_far=0 
 
-!! event scale
-REAL(KIND=CUSTOM_REAL), PARAMETER :: lambda_min=Vmin/f0
-REAL(KIND=CUSTOM_REAL), PARAMETER :: lambda=Vmax/f0
-REAL(KIND=CUSTOM_REAL), PARAMETER :: wavenumber=2.0*pi/lambda
-REAL(KIND=CUSTOM_REAL), PARAMETER :: omega=2*pi*f0
-
 !! measurement type weight 
 INTEGER, PARAMETER :: mtype=MAX_MISFIT_TYPE
 REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=1
-
-!! sensitivity
-LOGICAL :: sensitivity=.false.
 
 !! DD
 REAL(KIND=CUSTOM_REAL), PARAMETER :: cc_threshold=0.9
@@ -86,9 +77,9 @@ LOGICAL :: backtracking=.false.
 
 !! CONVERGENCE?
 INTEGER, PARAMETER :: iter_start=1
-INTEGER, PARAMETER :: iter_end=20
-REAL(KIND=CUSTOM_REAL) :: misfit_ratio_initial=0.001
-REAL(KIND=CUSTOM_REAL) :: misfit_ratio_previous=0.01
+INTEGER, PARAMETER :: iter_end=1
+REAL(KIND=CUSTOM_REAL), PARAMETER :: misfit_ratio_initial=0.001
+REAL(KIND=CUSTOM_REAL), PARAMETER :: misfit_ratio_previous=0.01
 
 !! POST-PROCESSING
 LOGICAL :: smooth=.false.
@@ -96,6 +87,8 @@ LOGICAL :: MASK_SOURCE=.false.
 LOGICAL :: MASK_STATION=.false.
 REAL(KIND=CUSTOM_REAL), PARAMETER :: source_radius=8.0
 REAL(KIND=CUSTOM_REAL), PARAMETER :: station_radius=4.0
+LOGICAL :: precond=.false.
+REAL(KIND=CUSTOM_REAL), PARAMETER :: wtr_precond=0.1
 
 !! DISPLAY 
 LOGICAL :: DISPLAY_DETAILS=.false.
@@ -147,8 +140,6 @@ INTEGER, DIMENSION(:), ALLOCATABLE :: nspec_proc
 INTEGER :: nker
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: g_new
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: p_new
-LOGICAL :: precond=.false.
-REAL(KIND=CUSTOM_REAL) :: wtr_precond=0.1
 
 !! models
 INTEGER :: nmod
