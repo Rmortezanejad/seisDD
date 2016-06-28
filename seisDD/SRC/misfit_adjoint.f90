@@ -137,8 +137,10 @@ program misfit_adjoint
         ! adjoint
         if(compute_adjoint) then 
             seism_adj = seism_adj_AD/max(num_AD,1) + seism_adj_DD/max(num_DD,1)
-            call finalize(input_dir,adjustl(data_names(icomp)))
         endif
+
+        ! finalize
+        call finalize(input_dir,adjustl(data_names(icomp)))
 
     endif ! nrec_proc>0
     enddo ! icomp
@@ -746,56 +748,58 @@ subroutine finalize(directory,data_name)
     real(kind=CUSTOM_REAL) :: adj(NSTEP), adj_vel(NSTEP), adj_acc(NSTEP)
 
     !! write SU adj
-    !! adjoint file format
-    select case(solver)
-    case('specfem2D')
-        if(myrank==0 .and. data_name == 'x') filen='Ux_file_single.su.adj'
-        if(myrank==0 .and. data_name == 'y') filen='Uy_file_single.su.adj'
-        if(myrank==0 .and. data_name == 'z') filen='Uz_file_single.su.adj'
-        if(myrank==0 .and. data_name == 'p') filen='Up_file_single.su.adj'
+    if(compute_adjoint) then
+        !! adjoint file format
+        select case(solver)
+        case('specfem2D')
+            if(myrank==0 .and. data_name == 'x') filen='Ux_file_single.su.adj'
+            if(myrank==0 .and. data_name == 'y') filen='Uy_file_single.su.adj'
+            if(myrank==0 .and. data_name == 'z') filen='Uz_file_single.su.adj'
+            if(myrank==0 .and. data_name == 'p') filen='Up_file_single.su.adj'
 
-    case('specfem3D')
-        write(char_i, '(I5)') myrank        ! convert integer to char
-        if(data_name == 'x') write(filen,'(a)') trim(adjustl(char_i))//'_dx_SU.adj'
-        if(data_name == 'y') write(filen,'(a)') trim(adjustl(char_i))//'_dy_SU.adj'
-        if(data_name == 'z') write(filen,'(a)') trim(adjustl(char_i))//'_dz_SU.adj'
-        if(data_name == 'p') write(filen,'(a)') trim(adjustl(char_i))//'_dp_SU.adj'
+        case('specfem3D')
+            write(char_i, '(I5)') myrank        ! convert integer to char
+            if(data_name == 'x') write(filen,'(a)') trim(adjustl(char_i))//'_dx_SU.adj'
+            if(data_name == 'y') write(filen,'(a)') trim(adjustl(char_i))//'_dy_SU.adj'
+            if(data_name == 'z') write(filen,'(a)') trim(adjustl(char_i))//'_dz_SU.adj'
+            if(data_name == 'p') write(filen,'(a)') trim(adjustl(char_i))//'_dp_SU.adj'
 
-    case default
-        print*,'Currently only work for specfem2D and specfem3D solver'
-        stop
-    end select
+        case default
+            print*,'Currently only work for specfem2D and specfem3D solver'
+            stop
+        end select
 
-    !! seismotype 
-    if(trim(seismotype) /= "displacement") then
+        !! seismotype 
+        if(trim(seismotype) /= "displacement") then
+            if(DISPLAY_DETAILS) then
+                print*
+                print*, trim(seismotype) ,' adjoint'
+            endif
+            do irec=1,NREC
+            adj(:)=seism_adj(:,irec)
+            if(norm2(adj(:))<SMALL_VAL) cycle
+            if(trim(seismotype) == "velocity") then
+                call compute_vel(adj,NSTEP,deltat,NSTEP,adj_vel)
+                seism_adj(:,irec)= - adj_vel(:)
+            elseif(trim(seismotype) == "acceleration") then
+                call compute_acc(adj,NSTEP,deltat,NSTEP,adj_acc)
+                seism_adj(:,irec)=adj_acc(:)
+            endif
+            enddo
+        endif
+
+        !! write adjoint source
+        write(filename,'(a)') &
+            trim(directory)//'/SEM/'//trim(filen)
         if(DISPLAY_DETAILS) then
             print*
-            print*, trim(seismotype) ,' adjoint'
+            print*,'SAVE seism_adj -- ',trim(filename)
+            if(DISPLAY_DETAILS) print*,'Min / Max of final seism_adj : ',&
+                minval(seism_adj(:,:)),maxval(seism_adj(:,:))
         endif
-        do irec=1,NREC
-        adj(:)=seism_adj(:,irec)
-        if(norm2(adj(:))<SMALL_VAL) cycle
-        if(trim(seismotype) == "velocity") then
-            call compute_vel(adj,NSTEP,deltat,NSTEP,adj_vel)
-            seism_adj(:,irec)= - adj_vel(:)
-        elseif(trim(seismotype) == "acceleration") then
-            call compute_acc(adj,NSTEP,deltat,NSTEP,adj_acc)
-            seism_adj(:,irec)=adj_acc(:)
-        endif
-        enddo
-    endif
 
-    !! write adjoint source
-    write(filename,'(a)') &
-        trim(directory)//'/SEM/'//trim(filen)
-    if(DISPLAY_DETAILS) then
-        print*
-        print*,'SAVE seism_adj -- ',trim(filename)
-        if(DISPLAY_DETAILS) print*,'Min / Max of final seism_adj : ',&
-            minval(seism_adj(:,:)),maxval(seism_adj(:,:))
+        call writeSU(filename,seism_adj)
     endif
-
-    call writeSU(filename,seism_adj)
 
     deallocate(seism_obs)
     deallocate(seism_syn)
