@@ -34,11 +34,13 @@ program data_misfit
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! sum event_misfit
     call sum_misfit(input_dir,misfit_cur,NPROC_DATA)
+
     !!! add current result to search history
-    write(filename, "(a,i2.2)") trim(output_dir)//'/data_misfit/data_misfit_hist_iter',iter
+    write(filename, "(a)") trim(output_dir)//'/misfit/data_misfit_hist_detail'
     OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
-    write(IOUT,'(f15.5,e15.8)') step_length,misfit_cur
+    write(IOUT,'(i,f15.5,e15.8)') iter,step_length,misfit_cur
     close(IOUT)
+
 
     ! check search status 
     if (.not.compute_adjoint) then 
@@ -47,7 +49,7 @@ program data_misfit
     else
         if(iter==1)  then
             !!! misfit hist for iteration 
-            write(filename,'(a)') trim(output_dir)//'/data_misfit/data_misfit_hist.dat'
+            write(filename,'(a)') trim(output_dir)//'/misfit/data_misfit_hist.dat'
             OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
             write(IOUT,'(I5,e15.8)') iter-1,misfit_cur
             close(IOUT)
@@ -63,7 +65,7 @@ program data_misfit
     endif ! compute_adjoint
 
     !! SAVE search status
-    write(filename,'(a)') trim(output_dir)//'/data_misfit/search_status.dat'
+    write(filename,'(a)') trim(output_dir)//'/misfit/search_status.dat'
     OPEN (IOUT, FILE=trim(filename))
     write(IOUT,'(I5)') is_cont
     write(IOUT,'(I5)') is_done
@@ -117,7 +119,7 @@ subroutine check_iteration(directory)
 
     misfit_hist=0.0_CUSTOM_REAL
 
-    write(filename, "(a)") trim(directory)//'/data_misfit/data_misfit_hist.dat'
+    write(filename, "(a)") trim(directory)//'/misfit/data_misfit_hist.dat'
     OPEN (IIN,FILE= filename,STATUS='OLD',action='read',iostat=ier)
 
     j=0
@@ -165,7 +167,7 @@ subroutine check_linesearch(directory,iter)
     integer :: iter,j
     integer :: ier,i,step
     real(kind=CUSTOM_REAL) :: optimal_misfit
-    real(kind=CUSTOM_REAL) :: temp(2)
+    real(kind=CUSTOM_REAL) :: temp(3)
     real(kind=CUSTOM_REAL) :: step_hist(max_step),misfit_hist(max_step)
     character(len=MAX_FILENAME_LEN) :: filename
     character(len=MAX_STRING_LEN) :: directory
@@ -173,18 +175,21 @@ subroutine check_linesearch(directory,iter)
     step_hist = 0.0_CUSTOM_REAL
     misfit_hist=0.0_CUSTOM_REAL  
 
-    write(filename, "(a,i2.2)") trim(directory)//'/data_misfit/data_misfit_hist_iter',iter
+    write(filename, "(a)") trim(directory)//'/misfit/data_misfit_hist_detail'
     OPEN (IIN,FILE= filename,STATUS='OLD',action='read',iostat=ier)
     j=0
-    do i=1,max_step+1
+    do i=1,(max_step+1)*iter
     read(IIN,*,iostat=ier) temp
     if (ier/=0) exit
-    step_hist(i)=temp(1)
-    misfit_hist(i)=temp(2)
-    j=j+1
+    if(temp(1)==iter) then
+        j=j+1
+        step_hist(j)=temp(2)
+        misfit_hist(j)=temp(3)
+    endif
     enddo
     close(IIN)
     step=j
+
 
     !if(DISPLAY_DETAILS) then
     print*,'misfit_hist for nstep ',step 
@@ -272,7 +277,7 @@ subroutine check_linesearch(directory,iter)
 
     if(is_done==1) then
         !!! misfit hist for iteration 
-        write(filename,'(a)') trim(directory)//'/data_misfit/data_misfit_hist.dat'
+        write(filename,'(a)') trim(directory)//'/misfit/data_misfit_hist.dat'
         OPEN (IOUT, FILE=filename,status='unknown',POSITION='APPEND')
         write(IOUT,'(I5,e15.8)') iter,optimal_misfit
         close(IOUT)

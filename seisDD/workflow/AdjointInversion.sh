@@ -90,11 +90,11 @@ do
 
     echo
     echo "sum data misfit ...... "
-    mkdir -p $SUBMIT_RESULT/data_misfit
+    mkdir -p $SUBMIT_RESULT/misfit
     step_length=0.0
     ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_sum_misfit_$iter
 
-    file=$SUBMIT_RESULT/data_misfit/search_status.dat
+    file=$SUBMIT_RESULT/misfit/search_status.dat
     is_cont=$(awk -v "line=1" 'NR==line { print $1 }' $file)
     is_done=$(awk -v "line=2" 'NR==line { print $1 }' $file)
     is_brak=$(awk -v "line=3" 'NR==line { print $1 }' $file)
@@ -164,10 +164,10 @@ do
 
         echo
         echo "sum data misfit ...... "
-        mkdir -p $SUBMIT_RESULT/data_misfit
+        mkdir -p $SUBMIT_RESULT/misfit
         ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_sum_misfit
 
-        file=$SUBMIT_RESULT/data_misfit/search_status.dat
+        file=$SUBMIT_RESULT/misfit/search_status.dat
         is_cont=$(awk -v "line=1" 'NR==line { print $1 }' $file)
         is_done=$(awk -v "line=2" 'NR==line { print $1 }' $file)
         is_brak=$(awk -v "line=3" 'NR==line { print $1 }' $file)
