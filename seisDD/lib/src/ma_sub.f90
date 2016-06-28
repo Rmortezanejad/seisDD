@@ -1345,4 +1345,23 @@ subroutine compute_vel(syn,npts,deltat,nlen,syn_vel)
     syn_vel(nlen)=(syn(nlen)-syn(nlen-1))/deltat
 
 end subroutine compute_vel
+
+!-----------------------------------------------------------------------------
+subroutine compute_acc(syn,npts,deltat,nlen,syn_acc)
+    use constants
+    implicit none
+    real(kind=CUSTOM_REAL), dimension(*),intent(in) :: syn
+    real(kind=CUSTOM_REAL), intent(in) :: deltat
+    integer, intent(in) :: npts, nlen
+    real(kind=CUSTOM_REAL), dimension(*),intent(out) :: syn_acc
+    real(kind=CUSTOM_REAL), dimension(npts) :: syn_vel
+
+    ! velocity 
+    call compute_vel(syn,npts,deltat,nlen,syn_vel)
+
+    ! acceleration 
+    call compute_vel(syn_vel,npts,deltat,nlen,syn_acc)
+
+end subroutine compute_acc
+
 !-----------------------------------------------------------------------------

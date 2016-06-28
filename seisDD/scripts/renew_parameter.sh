@@ -45,6 +45,9 @@ fi
 if [ ! -z "$NSRC" ]; then
     sed -e "s#^INTEGER, PARAMETER :: NSRC=.*#INTEGER, PARAMETER :: NSRC=$NSRC #g"  $FILE > temp;  mv temp $FILE
 fi
+if [ ! -z "$seismotype" ]; then
+    sed -e "s#^CHARACTER (LEN=20) :: seismotype=.*#CHARACTER (LEN=20) :: seismotype='$seismotype'#g"  $FILE > temp;  mv temp $FILE
+fi
 
 ## PRE-PROCESSING
 # wavelet
