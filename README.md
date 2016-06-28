@@ -1,11 +1,12 @@
 # seisDD
+
 Double-difference adjoint seismic tomography
 
-YO Yuan, FJ Simons, J Tromp
+Yanhua O. Yuan; Frederik J. Simons; Jeroen Tromp
 
-Geophysical Journal International (2016) 
+Geophys. J. Int. 2016 : ggw233v1-ggw233.
 
-In the press (DOI: 10.1093/gji/ggw233)
+http://dx.doi.org/10.1093/gji/ggw233
 
 [READ INSTRUCTIONS](INSTRUCTIONS)
 
