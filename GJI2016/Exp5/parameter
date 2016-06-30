@@ -57,6 +57,7 @@ DD_max=10
 kernel_list='beta_kernel'
 precond=false
 precond_list='hessian2_kernel'
+z_precond=0.0
 model_list='vs'
 
 # optimization(SD CG QN)
