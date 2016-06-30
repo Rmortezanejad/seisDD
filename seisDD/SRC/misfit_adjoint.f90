@@ -556,7 +556,7 @@ subroutine Absolute_diff()
         ! window sum 
         misfit_AD = misfit_AD + misfit_trace / ntype
         if(compute_adjoint) then 
-            !  call process_adj(adj_trace,ntstart,ntend,dis_sr)
+            call process_adj(adj_trace,ntstart,ntend,dis_sr)
             if(DISPLAY_DETAILS) then
                 print*, 'Min/Max of adj :',minval(adj_trace(:)),maxval(adj_trace(:))
             endif

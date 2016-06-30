@@ -393,7 +393,7 @@ subroutine ET_misfit(d,s,npts,deltat,f0,i_tstart,i_tend,window_type,compute_adjo
         Mtr=-sum(seism_vel(1:nlen)*seism_vel(1:nlen))*deltat
 
         ! E_ratio
-        epslon=wtr_env*maxval(abs(E_s(1:nlen)),1)
+        epslon=wtr_env*maxval(E_s)
         E_ratio(1:nlen) =  tshift /Mtr*seism_vel(1:nlen)/(E_s(1:nlen)+epslon)
 
         ! hilbert transform for E_ratio*hilbt
@@ -509,7 +509,7 @@ subroutine ED_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     if(COMPUTE_ADJOINT) then
 
         ! E_ratio
-        epslon=wtr_env*maxval(E_s,1)
+        epslon=wtr_env*maxval(E_s)
         E_ratio(1:nlen)=(E_s(1:nlen)-E_d(1:nlen))/(E_s(1:nlen)+epslon)
 
         ! hilbert transform for E_ratio*hilbt

@@ -86,7 +86,7 @@ program smooth_sem
   include "precision.h"
 #endif
 
-  integer, parameter :: NARGS = 6
+  integer, parameter :: NARGS = 7
 
   ! data must be of dimension: (NGLLX,NGLLZ,NSPEC_AB)
   real(kind=CUSTOM_REAL), dimension(:,:,:),allocatable :: dat
@@ -106,6 +106,7 @@ program smooth_sem
   character(len=MAX_STRING_LEN) :: kernel_names(MAX_KERNEL_NAMES)
   character(len=MAX_STRING_LEN) :: kernel_names_comma_delimited
   integer :: nker
+  real(kind=CUSTOM_REAL) :: z_precond
 
   ! smoothing parameters
   character(len=MAX_STRING_LEN*2) :: ks_file
@@ -143,7 +144,7 @@ myrank = 0
   ! parse command line arguments
   if (command_argument_count() /= NARGS) then
     if (myrank == 0) then
-        print *, 'USAGE:  mpirun -np NPROC bin/xsmooth_sem SIGMA_H SIGMA_V KERNEL_NAME INPUT_DIR OUPUT_DIR GPU_MODE'
+        print *, 'USAGE:  mpirun -np NPROC bin/xsmooth_sem SIGMA_H SIGMA_V Z_precond KERNEL_NAME INPUT_DIR OUPUT_DIR GPU_MODE'
       stop ' Please check command line arguments'
     endif
   endif
@@ -158,10 +159,11 @@ myrank = 0
 
   read(arg(1),*) sigma_h
   read(arg(2),*) sigma_v
-  kernel_names_comma_delimited = arg(3)
-  input_dir= arg(4)
-  output_dir = arg(5)
-  read(arg(6),*) GPU_MODE
+  read(arg(3),*) z_precond
+  kernel_names_comma_delimited = arg(4)
+  input_dir= arg(5)
+  output_dir = arg(6)
+  read(arg(7),*) GPU_MODE
 
   call parse_kernel_names(kernel_names_comma_delimited,kernel_names,nker)
   allocate(norm(nker),max_new(nker),max_old(nker),min_new(nker),min_old(nker))
@@ -434,7 +436,7 @@ do iker= 1, nker
 
   open(IOUT,file=trim(ks_file),status='unknown',form='unformatted',iostat=ier)
   if (ier /= 0) stop 'Error opening smoothed kernel file'
-  write(IOUT) dat_smooth(:,:,:,iker) * zstore_me(:,:,:)**0.0
+  write(IOUT) dat_smooth(:,:,:,iker) * zstore_me(:,:,:)**z_precond
   close(IOUT)
   if (myrank == 0) print *,'SAVE smooth kernel -- ',trim(ks_file)
 enddo

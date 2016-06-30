@@ -14,7 +14,6 @@ program mask_func
     character(len=MAX_STRING_LEN) :: arg(NARGS)
     character(len=MAX_STRING_LEN) :: input_dir,output_dir
     INTEGER :: i, ier
-    real t1,t2
 
 #ifdef USE_MPI
     call MPI_INIT(ier)
@@ -24,8 +23,6 @@ program mask_func
     nproc = 1
     myrank = 0
 #endif
-
-    call cpu_time(t1)
 
     ! parse command line arguments
     if (command_argument_count() /= NARGS) then
@@ -57,8 +54,6 @@ program mask_func
 
     !! save mask file
     call finalize(output_dir)
-
-    call cpu_time(t2)
 
 #ifdef USE_MPI
     ! stop all the processes and exit
@@ -152,10 +147,10 @@ subroutine add_source_mask()
         (ystore(ix,iy,iz,ispec)-y_source)**2+ &
         (zstore(ix,iy,iz,ispec)-z_source)**2)
     if(dis<=source_radius) then 
-        ! gaussian
+        ! gaussian damping
         mask(ix,iy,iz,ispec)=mask(ix,iy,iz,ispec) * &
             (1.0 - exp(-4.0*(dis/source_radius)**2))**4
-        ! mute 
+        ! zero mute 
         !  mask(ix,iy,iz,ispec)=0.0
     endif
     enddo
@@ -215,7 +210,7 @@ subroutine add_station_mask(directory)
         mask(ix,iy,iz,ispec)=mask(ix,iy,iz,ispec) * & 
             (1.0 - exp(-4.0*(dis/station_radius)**2))**4
         ! zero mute
-        !  mask(ix,iy,iz,ispec)= 0.0
+        !  mask(ix,iy,iz,ispec)=0.0
     endif
     enddo
     enddo
