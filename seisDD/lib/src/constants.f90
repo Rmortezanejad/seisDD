@@ -4,7 +4,7 @@ implicit none
 
 integer,parameter :: IIN=40
 integer, parameter :: IOUT=41
-integer,parameter :: MAX_STRING_LEN= 65535
+integer,parameter :: MAX_STRING_LEN=65535
 integer,parameter :: MAX_KERNEL_NUM=10
 integer,parameter :: MAX_FILENAME_LEN=65535
 integer,parameter :: MAX_LINES=100000000
@@ -35,12 +35,12 @@ integer, parameter :: NWINDOWS=2500
 
 ! mathematical constants
 real(kind=CUSTOM_REAL), parameter :: PI=3.1415926535897
-real(kind=CUSTOM_REAL), parameter :: E= 2.7182818284590
+real(kind=CUSTOM_REAL), parameter :: E=2.7182818284590
 
 ! filter types
 integer, parameter :: HANNING=1
 integer, parameter :: HAMMING=2
-integer, parameter :: COSINE= 3
+integer, parameter :: COSINE=3
 
 ! modified constants 
 
@@ -68,7 +68,7 @@ real(kind=CUSTOM_REAL), parameter ::wtr_mtm=1.e-10
 real(kind=CUSTOM_REAL), parameter :: mt_threshold=0.9! eigenvalue threshold
 !integer, parameter :: MW=10 ! number of segments of uncorrelated frequency points 
 real(kind=CUSTOM_REAL), parameter :: NW=3
-integer, parameter :: NTAPER =int(2*NW-1)
+integer, parameter :: NTAPER=int(2*NW-1)
 ! error estimation 
 logical :: USE_ERROR_CC=.false.
 ! minimum error for dt and dlnA

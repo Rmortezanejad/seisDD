@@ -80,7 +80,7 @@ LOGICAL :: backtracking=.false.
 INTEGER, PARAMETER :: iter_start=1
 INTEGER, PARAMETER :: iter_end=1
 REAL(KIND=CUSTOM_REAL), PARAMETER :: misfit_ratio_initial=0.001
-REAL(KIND=CUSTOM_REAL), PARAMETER :: misfit_ratio_previous=0.01
+REAL(KIND=CUSTOM_REAL), PARAMETER :: misfit_ratio_previous=0.001
 
 !! POST-PROCESSING
 LOGICAL :: smooth=.false.
