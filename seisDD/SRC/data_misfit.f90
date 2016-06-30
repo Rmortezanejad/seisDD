@@ -99,7 +99,8 @@ subroutine sum_misfit(directory,misfit_cur,NPROC_DATA)
         read(IIN,*) temp
     end if
     close(IIN)
-    if(DISPLAY_DETAILS) print*,'read misfit file from --- ',trim(filename), ' misfit=', temp
+    if(DISPLAY_DETAILS) print*,'read misfit file ... '
+    if(DISPLAY_DETAILS) print*, 'myrank=',ip, ' misfit=', temp
     !! sum over source (chi-squared)
     misfit_cur=misfit_cur+temp
     enddo !! ip
@@ -190,12 +191,9 @@ subroutine check_linesearch(directory,iter)
     close(IIN)
     step=j
 
-
-    !if(DISPLAY_DETAILS) then
-    print*,'misfit_hist for nstep ',step 
+    print*,'misfit_hist at iter=',iter,',nstep=',step
     print*,'step_hist : ',step_hist(1:step)
     print*,'misfit_hist: ',misfit_hist(1:step)
-    !endif
 
     ! determine next step search status
     !  if(.not. backtracking) then
@@ -206,7 +204,6 @@ subroutine check_linesearch(directory,iter)
         if(misfit_hist(step)<misfit_hist(step-1))  then    ! decrease misfit      
             ! two criteria : max_step; misfit reduction rate
             if(step<=max_step) then 
-                !.and.(misfit_hist(step-1) - misfit_hist(step))/misfit_hist(step-1) >= misfit_ratio_previous) then  
                 ! next status -- forward continue
                 is_cont=1
                 is_done=0
@@ -285,4 +282,5 @@ subroutine check_linesearch(directory,iter)
         ! check iteration for next step
         call check_iteration(directory)
     endif
+
 end subroutine check_linesearch

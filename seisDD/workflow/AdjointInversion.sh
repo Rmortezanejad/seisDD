@@ -89,10 +89,10 @@ do
     fi
 
     echo
-    echo "sum data misfit ...... "
+    echo "data misfit ...... "
     mkdir -p $SUBMIT_RESULT/misfit
     step_length=0.0
-    ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_sum_misfit_$iter
+    ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_data_misfit_$iter
 
     file=$SUBMIT_RESULT/misfit/search_status.dat
     is_cont=$(awk -v "line=1" 'NR==line { print $1 }' $file)
@@ -107,7 +107,7 @@ do
     fi
 
     echo 
-    echo "sum event kernel ...... "
+    echo "misfit kernel ...... "
     mkdir -p $SUBMIT_RESULT/misfit_kernel
     # prepare necessary files for kernel sum and smoothing
     if [ $solver == 'specfem2D' ]; then
@@ -121,7 +121,7 @@ do
         mkdir OUTPUT_FILES/DATABASES_MPI
         cp $SUBMIT_RESULT/misfit_kernel/proc*external_mesh.bin OUTPUT_FILES/DATABASES_MPI/
     fi
-    mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_list $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_sum_kernel_$iter
+    mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_list $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_misfit_kernel_$iter
 
     if $smooth ; then
         echo 
@@ -163,9 +163,9 @@ do
         fi
 
         echo
-        echo "sum data misfit ...... "
+        echo "data misfit ...... "
         mkdir -p $SUBMIT_RESULT/misfit
-        ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_sum_misfit
+        ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_data_misfit
 
         file=$SUBMIT_RESULT/misfit/search_status.dat
         is_cont=$(awk -v "line=1" 'NR==line { print $1 }' $file)
