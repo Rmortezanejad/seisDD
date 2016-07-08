@@ -55,21 +55,27 @@ if [ ! -z "$Wscale" ]; then
     sed -e "s#^INTEGER, PARAMETER :: Wscale=.*#INTEGER, PARAMETER :: Wscale=$Wscale #g"  $FILE > temp;  mv temp $FILE
 fi
 # window
-if [ ! -z "$is_window" ]; then
-    sed -e "s#^INTEGER, PARAMETER :: is_window=.*#INTEGER, PARAMETER :: is_window=$is_window #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$TIME_WINDOW" ]; then
+    sed -e "s#^LOGICAL :: TIME_WINDOW=.*#LOGICAL :: TIME_WINDOW=.$TIME_WINDOW.#g"  $FILE > temp;  mv temp $FILE
 fi
 if [ ! -z "$window_type" ]; then
     sed -e "s#^INTEGER, PARAMETER :: window_type=.*#INTEGER, PARAMETER :: window_type=$window_type#g"  $FILE > temp;  mv temp $FILE
 fi
-if [ ! -z "$Vmax" ]; then
-    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmax=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmax=${Vmax} #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$T0_TOP" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_TOP=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_TOP=${T0_TOP} #g"  $FILE > temp;  mv temp $FILE
 fi
-if [ ! -z "$Vmin" ]; then
-    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmin=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmin=${Vmin} #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$T0_BOT" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_BOT=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_BOT=${T0_BOT} #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$VEL_TOP" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_TOP=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_TOP=${VEL_TOP} #g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$VEL_BOT" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_BOT=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_BOT=${VEL_BOT} #g"  $FILE > temp;  mv temp $FILE
 fi
 # damping
-if [ ! -z "$is_laplace" ]; then
-    sed -e "s#^INTEGER, PARAMETER :: is_laplace=.*#INTEGER, PARAMETER :: is_laplace=$is_laplace #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "$DAMPING" ]; then
+    sed -e "s#^LOGICAL :: DAMPING=.*#LOGICAL :: DAMPING=.$DAMPING.#g"  $FILE > temp;  mv temp $FILE
 fi
 if [ ! -z "$X_decay" ]; then
 
@@ -79,18 +85,25 @@ if [ ! -z "$T_decay" ]; then
     sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: T_decay=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: T_decay=${T_decay} #g"  $FILE > temp;  mv temp $FILE
 fi
 # mute
-if [ ! -z "$mute_near" ]; then
-    sed -e "s#^INTEGER, PARAMETER :: mute_near=.*#INTEGER, PARAMETER :: mute_near=$mute_near #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "${MUTE_NEAR}" ]; then
+    sed -e "s#^LOGICAL :: MUTE_NEAR=.*#LOGICAL :: MUTE_NEAR=.${MUTE_NEAR}.#g"  $FILE > temp;  mv temp $FILE
 fi
 if [ ! -z "$offset_near" ]; then
-    sed -e "s#^REAL(KIND=CUSTOM_REAL) :: offset_near=.*#REAL(KIND=CUSTOM_REAL) :: offset_near=${offset_near} #g"  $FILE > temp;  mv temp $FILE
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_near=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_near=${offset_near} #g"  $FILE > temp;  mv temp $FILE
 fi
-if [ ! -z "$mute_far" ]; then
-
-    sed -e "s#^INTEGER, PARAMETER :: mute_far=.*#INTEGER, PARAMETER :: mute_far=$mute_far #g"  $FILE > temp;  mv temp $FILE
+if [ ! -z "${MUTE_FAR}" ]; then
+    sed -e "s#^LOGICAL :: MUTE_FAR=.*#LOGICAL :: MUTE_FAR=.${MUTE_FAR}.#g"  $FILE > temp;  mv temp $FILE
 fi
 if [ ! -z "$offset_far" ]; then
-    sed -e "s#^REAL(KIND=CUSTOM_REAL) :: offset_far=.*#REAL(KIND=CUSTOM_REAL) :: offset_far=${offset_far} #g"  $FILE > temp;  mv temp $FILE
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_far=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_far=${offset_far} #g"  $FILE > temp;  mv temp $FILE
+fi
+# event normalize
+if [ ! -z "$EVENT_NORMALIZE" ]; then
+    sed -e "s#^LOGICAL :: EVENT_NORMALIZE=.*#LOGICAL :: EVENT_NORMALIZE=.$EVENT_NORMALIZE.#g"  $FILE > temp;  mv temp $FILE
+fi
+# trace normalize
+if [ ! -z "$TRACE_NORMALIZE" ]; then        
+    sed -e "s#^LOGICAL :: TRACE_NORMALIZE=.*#LOGICAL :: TRACE_NORMALIZE=.$TRACE_NORMALIZE.#g"  $FILE > temp;  mv temp $FILE    
 fi
 
 # measurement type weight 

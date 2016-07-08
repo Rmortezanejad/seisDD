@@ -68,9 +68,9 @@ iter_end=10
 Wscale=0
 wavelet_path="$seisDD/seisDD/lib/WT_basis"
 
-is_window=1
-Vmin=3100
-Vmax=3900
+TIME_WINDOW=true
+VEL_TOP=3900
+VEL_BOT=3100
 
 ### postprocessing
 # smooth

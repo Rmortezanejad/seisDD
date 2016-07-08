@@ -69,10 +69,10 @@ program misfit_adjoint
     if(nrec_proc > 0 ) then  ! non-zero file
 
         ! step 2 -- preprocessing data and syn 
-        if(maxval(abs(seism_obs(:,:)))<SMALL_VAL) cycle
-        call process_obs(seism_obs)
-        if(maxval(abs(seism_syn(:,:)))<SMALL_VAL) cycle
-        call process_syn(seism_syn)
+        if(norm2(seism_obs(:,:))<SMALL_VAL) cycle
+        call process_data_all(seism_obs,'obs')
+        if(norm2(seism_syn(:,:))<SMALL_VAL) cycle
+        call process_data_all(seism_syn,'syn')
 
         if(compute_adjoint .and. DISPLAY_DETAILS) then
             write(filename,'(a)') &
@@ -137,6 +137,7 @@ program misfit_adjoint
         ! adjoint
         if(compute_adjoint) then 
             seism_adj = seism_adj_AD/max(num_AD,1) + seism_adj_DD/max(num_DD,1)
+            call process_adj_all()
         endif
 
         ! finalize
@@ -177,7 +178,7 @@ end program misfit_adjoint
 subroutine initialize(directory,data_name)
     use seismo_parameters
     implicit none
-    integer :: ier,iker,imod,irec
+    integer :: ier,iker,imod,irec,itime
     integer :: filesize, nrec_obs, nrec_syn
     logical :: ex_obs, ex_syn
     character(len=MAX_FILENAME_LEN) :: char_i, filen, filename_obs, filename_syn
@@ -187,7 +188,6 @@ subroutine initialize(directory,data_name)
     logical :: ex_stf
     real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: temp
     integer :: irow, ncolum
-    real(kind=CUSTOM_REAL) :: dis_sr
 
     !! data file format
     filen='empty'
@@ -248,6 +248,9 @@ subroutine initialize(directory,data_name)
         allocate(st_zval(nrec_proc))
         allocate(win_start(nrec_proc))
         allocate(win_end(nrec_proc))
+        allocate(trace_norm(nrec_proc))
+        allocate(time(NSTEP))
+        allocate(dis_sr(nrec_proc))
         !allocate(which_proc_receiver(NPROC))
 
         ! initialization
@@ -258,11 +261,21 @@ subroutine initialize(directory,data_name)
         seism_adj_DD = 0.0_CUSTOM_REAL
         win_start=NSTEP
         win_end=1
+        event_norm=1.0
+        trace_norm=1.0
+        do itime=1,NSTEP
+        time(itime)=(itime-1)*deltat+t0
+        enddo
         ! which_proc_receiver=0
 
         ! allocate obs and syn
         call readSU(filename_obs,seism_obs)
         call readSU(filename_syn,seism_syn)
+        do irec=1,nrec_proc
+        dis_sr(irec)=sqrt((st_xval(irec)-x_source)**2 &            
+            +(st_yval(irec)-y_source)**2 &                                            
+            +(st_zval(irec)-z_source)**2)
+        enddo
 
         if(DISPLAY_DETAILS) then
             print*,'Min / Max of seism_obs : ',&
@@ -274,131 +287,70 @@ subroutine initialize(directory,data_name)
 
 end subroutine initialize
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine process_obs(seism)
+subroutine process_data_all(seism,tag)
     use seismo_parameters
+    implicit none
     integer :: ier,irec
     real(kind=CUSTOM_REAL) :: seism(NSTEP,nrec_proc)
+    character(len=3) :: tag
     real(kind=CUSTOM_REAL) :: trace(NSTEP)
     real(kind=CUSTOM_REAL) :: wtr
-    integer :: itstart,itend
+    integer :: istart,iend
     integer :: itime
     integer :: NA
-    real(kind=CUSTOM_REAL) :: time(NSTEP),tas(NSTEP)
-    real(kind=CUSTOM_REAL) :: dis_sr
+    real(kind=CUSTOM_REAL) :: tas(NSTEP)
 
-    do itime=1,NSTEP
-    time=(itime-1)*deltat+t0
-    enddo
-
-    do irec = 1,nrec_proc
-    trace(:) = seism(:,irec)
-    ! initialization
-    istart=1
-    iend=NSTEP
-
-    wtr=maxval(abs(trace(istart:iend)))
-    if(wtr>SMALL_VAL) then  ! non-zero trace
-        dis_sr=sqrt((st_xval(irec)-x_source)**2 &
-            +(st_yval(irec)-y_source)**2 &
-            +(st_zval(irec)-z_source)**2)
-
-        !! mute 
-        if(mute_near .eq. 1 .and. dis_sr<=offset_near ) then
-            trace(1:NSTEP) = 0.0
-            istart=NSTEP
-            iend=0
-        endif
-        if(mute_far .eq. 1 .and. dis_sr>=offset_far) then
-            trace(1:NSTEP) =0.0
-            istart=NSTEP
-            iend=0
-        endif
-        !! laplace damping spatially and temporally 
-        if (is_laplace .eq. 1 .and. istart<iend) then
-            ! spatial
-            trace=trace*exp(-(dis_sr*lambda_x)**2)
-            ! temporal
-            trace=trace*exp(-(time*lambda_t)**2)
-        endif
-        !! dip-window using slopes 
-        if(is_window .eq. 1 .and. istart<iend) then
-            istart=max(int((t0+dis_sr/Vmax-taper_len)/deltat),istart)
-            iend=min(int((t0+dis_sr/Vmin+wavelet_len+taper_len)/deltat),iend)
-            tas(1:NSTEP)=0.d0
-            if(iend>istart) then
-                call window(NSTEP,istart,iend,window_type,tas)
-            else
-                istart=NSTEP
-                iend=1
-            endif
-            trace=trace*tas
-        endif ! window
-        !! WT filtering
-        if( Wscale .gt. 0.and. istart<iend) then
-            call WT(trace,NSTEP,Wscale,NA)
-            !istart=max(istart-NA,1)
-            !iend=min(iend+NA,NSTEP)
-        endif
-
-        win_start(irec)=istart
-        win_end(irec)=iend
-
+    !! Event normalization
+    if(EVENT_NORMALIZE) then
+        wtr=norm2(seism(:,:))
+        if(wtr<SMALL_VAL) stop
+        if (DISPLAY_DETAILS) print*,'Event normalization ',tag, wtr
+        seism=seism/wtr
+        if(tag=='syn') event_norm=wtr
     endif
-    seism(:,irec)=trace(:)
-    enddo
 
-end subroutine process_obs
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine process_syn(seism)
-    use seismo_parameters
-    integer :: ier,irec
-    real(kind=CUSTOM_REAL) :: seism(NSTEP,nrec_proc)
-    real(kind=CUSTOM_REAL) :: trace(NSTEP)
-    real(kind=CUSTOM_REAL) :: wtr
-    integer :: itstart,itend
-    integer :: itime
-    integer :: NA
-    real(kind=CUSTOM_REAL) :: time(NSTEP),tas(NSTEP)
-    real(kind=CUSTOM_REAL) :: dis_sr
-
-    do itime=1,NSTEP
-    time=(itime-1)*deltat+t0
-    enddo
-
+    !! trace-wise processing
     do irec = 1,nrec_proc 
     trace(:) = seism(:,irec)
     ! initialization
     istart=1
     iend=NSTEP
 
-    wtr=maxval(abs(trace(istart:iend)))
+    wtr=norm2(trace(istart:iend))
     if(wtr>SMALL_VAL) then  ! non-zero trace
-        dis_sr=sqrt((st_xval(irec)-x_source)**2 &
-            +(st_yval(irec)-y_source)**2 &
-            +(st_zval(irec)-z_source)**2)
-
-        !! mute 
-        if(mute_near .eq. 1 .and. dis_sr<=offset_near ) then
+        !! trace normalization 
+        if(TRACE_NORMALIZE) then
+            if (DISPLAY_DETAILS .and. irec==1) print*,'Trace normalization ', tag
+            trace=trace/wtr 
+            if(tag=='syn') trace_norm(irec)=wtr
+        endif
+        ! WT filtering
+        if( Wscale .gt. 0.and. istart<iend) then
+            call WT(trace,NSTEP,Wscale,NA)
+        endif
+        !! mute near offset 
+        if(MUTE_NEAR .and. dis_sr(irec)<=offset_near ) then
             trace(1:NSTEP) = 0.0
             istart=NSTEP
             iend=0
         endif
-        if(mute_far .eq. 1 .and. dis_sr>=offset_far) then
+        !! muter far offset
+        if(MUTE_FAR .and. dis_sr(irec)>=offset_far) then
             trace(1:NSTEP) =0.0
             istart=NSTEP
             iend=0
         endif
         !! laplace damping spatially and temporally 
-        if (is_laplace .eq. 1 .and. istart<iend) then
+        if (DAMPING .and. istart<iend) then
             ! spatial
-            trace=trace*exp(-(dis_sr*lambda_x)**2)
+            trace=trace*exp(-(dis_sr(irec)*lambda_x)**2)
             ! temporal
-            trace=trace*exp(-(time*lambda_t)**2)
+            trace(1:NSTEP)=trace(1:NSTEP)*exp(-(time(1:NSTEP)*lambda_t)**2)
         endif
-        ! dip-window using slopes 
-        if(is_window .eq. 1 .and. istart<iend) then
-            istart=max(int((t0+dis_sr/Vmax-taper_len)/deltat),istart)
-            iend=min(int((t0+dis_sr/Vmin+wavelet_len+taper_len)/deltat),iend)
+        ! time-domain window using slopes 
+        if(TIME_WINDOW .and. istart<iend) then
+            istart=max(int((T0_TOP+dis_sr(irec)/VEL_TOP-taper_len)/deltat),istart)
+            iend=min(int((T0_BOT+dis_sr(irec)/VEL_BOT+taper_len)/deltat),iend)
             tas(1:NSTEP)=0.d0
             if(iend>istart) then
                 call window(NSTEP,istart,iend,window_type,tas)
@@ -408,71 +360,89 @@ subroutine process_syn(seism)
             endif
             trace=trace*tas 
         endif ! window
-        ! WT filtering
-        if( Wscale .gt. 0.and. istart<iend) then
-            call WT(trace,NSTEP,Wscale,NA)
-            !istart=max(istart-NA,1)
-            !iend=min(iend+NA,NSTEP)
-        endif
-
+        ! save
         win_start(irec)=istart
         win_end(irec)=iend
-
     endif ! non-zero trace
     seism(:,irec)=trace(:)
     enddo ! irec
 
-end subroutine process_syn
+end subroutine process_data_all
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine process_adj(trace,istart,iend,dis_sr)
+subroutine process_adj_all()
     use seismo_parameters
+    implicit none
+    integer :: irec
+    real(kind=CUSTOM_REAL) :: adj(NSTEP), adj_vel(NSTEP), adj_acc(NSTEP)
+
+        !! post-processing of seism_adj
+        do irec=1,nrec_proc
+        adj(:)=seism_adj(:,irec)
+        if(norm2(adj(:))<SMALL_VAL) cycle
+        ! trace normalize
+        if(TRACE_NORMALIZE) adj=adj/trace_norm(irec)
+        ! seismotype
+        if(DISPLAY_DETAILS .and. irec==1) print*, trim(seismotype) ,' adjoint'
+        if(trim(seismotype) == "velocity") then
+            call compute_vel(adj,NSTEP,deltat,NSTEP,adj_vel)
+            seism_adj(:,irec)= - adj_vel(:)
+        elseif(trim(seismotype) == "acceleration") then
+            call compute_acc(adj,NSTEP,deltat,NSTEP,adj_acc)
+            seism_adj(:,irec)=adj_acc(:)
+        endif
+        enddo
+        ! event normalize
+        if(EVENT_NORMALIZE) seism_adj=seism_adj/event_norm
+
+end subroutine process_adj_all
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+subroutine process_adj_trace(trace,istart,iend,dis)
+    use seismo_parameters
+    implicit none
     real(kind=CUSTOM_REAL) :: trace(NSTEP)
-    integer :: itstart,itend
-    real(kind=CUSTOM_REAL) :: dis_sr
+    integer :: istart,iend
+    real(kind=CUSTOM_REAL) :: dis
     real(kind=CUSTOM_REAL) :: wtr
     integer :: NA
     integer :: itime
-    real(kind=CUSTOM_REAL) :: time(NSTEP),tas(NSTEP)
+    real(kind=CUSTOM_REAL) :: tas(NSTEP)
     real(kind=CUSTOM_REAL), dimension(:),allocatable :: stf_reverse
 
-    do itime=1,NSTEP
-    time=(itime-1)*deltat+t0
-    enddo
-
-    wtr=maxval(abs(trace(istart:iend)))
+    wtr=norm2(trace(istart:iend))
     if(wtr>SMALL_VAL) then  ! non-zero trace
-        ! WT filtering
-        if( Wscale .gt. 0) then
-            call WT(trace,NSTEP,Wscale,NA)
-        endif
-        ! dip-window using slopes 
-        if(is_window .eq. 1) then
+        ! time-domain window using slopes 
+        if(TIME_WINDOW) then
             ! window
             tas(1:NSTEP)=0.d0
             call window(NSTEP,istart,iend,window_type,tas)
             trace=trace*tas
         endif
         !! laplace damping spatially and temporally 
-        if (is_laplace .eq. 1 .and. istart<iend) then
+        if (DAMPING) then
             ! spatial
-            trace=trace*exp(-(dis_sr*lambda_x)**2)
+            trace=trace*exp(-(dis*lambda_x)**2)
             ! temporal
-            trace=trace*exp(-(time*lambda_t)**2)
+            trace(1:NSTEP)=trace(1:NSTEP)*exp(-(time(1:NSTEP)*lambda_t)**2)
         endif
-        !! mute 
-        if(mute_near .eq. 1 .and. dis_sr<=offset_near ) then
+        !! mute near offset 
+        if(MUTE_NEAR .and. dis<=offset_near) then
             trace(1:NSTEP) = 0.0
         endif
-        if(mute_far .eq. 1 .and. dis_sr>=offset_far) then                                                                        
+        !! mute far offset
+        if(MUTE_FAR .and. dis>=offset_far) then                                                      
             trace(1:NSTEP) = 0.0
         endif
-
+        ! WT filtering
+        if( Wscale .gt. 0) then
+            call WT(trace,NSTEP,Wscale,NA)
+        endif
     endif ! non-zero trace
 
-end subroutine process_adj
+end subroutine process_adj_trace
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  `  
 subroutine Absolute_diff()
     use seismo_parameters
+    implicit none
     integer :: irec, itype, ntype
     real(kind=CUSTOM_REAL) :: seism(NSTEP,nrec_proc)
     real(kind=CUSTOM_REAL) :: d(NSTEP),s(NSTEP),adj_trace(NSTEP),adj(NSTEP)
@@ -506,10 +476,6 @@ subroutine Absolute_diff()
     ! initialization
     adj_trace = 0.0_CUSTOM_REAL
     misfit_trace=0.0
-
-    dis_sr=sqrt((st_xval(irec)-x_source)**2 &
-        +(st_yval(irec)-y_source)**2 &
-        +(st_zval(irec)-z_source)**2)
 
     ! window info
     ntstart = win_start(irec)
@@ -556,7 +522,7 @@ subroutine Absolute_diff()
         ! window sum 
         misfit_AD = misfit_AD + misfit_trace / ntype
         if(compute_adjoint) then 
-            call process_adj(adj_trace,ntstart,ntend,dis_sr)
+            call process_adj_trace(adj_trace,ntstart,ntend,dis_sr(irec))
             if(DISPLAY_DETAILS) then
                 print*, 'Min/Max of adj :',minval(adj_trace(:)),maxval(adj_trace(:))
             endif
@@ -572,7 +538,8 @@ end subroutine Absolute_diff
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine Relative_diff(input_dir,data_name)
     use seismo_parameters
-    integer :: irec,jrec,itype, ntype
+    implicit none
+    integer :: irec,jrec,itype, ntype,ier
     character(len=MAX_STRING_LEN) :: input_dir
     character(len=MAX_STRING_LEN) :: data_name
     character(len=MAX_FILENAME_LEN) :: filename
@@ -617,9 +584,7 @@ subroutine Relative_diff(input_dir,data_name)
     d(:)=seism_obs(:,irec)
     s(:)=seism_syn(:,irec)
 
-    dis_sr1=sqrt((st_xval(irec)-x_source)**2 &
-        +(st_yval(irec)-y_source)**2 &
-        +(st_zval(irec)-z_source)**2)
+    dis_sr1=dis_sr(irec)
 
     ! window info
     ntstart = win_start(irec)
@@ -670,9 +635,7 @@ subroutine Relative_diff(input_dir,data_name)
         adj_pair = 0.0
         adj_ref_pair = 0.0
 
-        dis_sr2=sqrt((st_xval(jrec)-x_source)**2 &
-            +(st_yval(jrec)-y_source)**2 &
-            +(st_zval(jrec)-z_source)**2)
+        dis_sr2=dis_sr(jrec)
 
         ! number of double difference measurements
         num_DD = num_DD+1
@@ -709,8 +672,8 @@ subroutine Relative_diff(input_dir,data_name)
             misfit_DD=misfit_DD+ misfit_pair/ntype
 
             if(compute_adjoint) then
-                call process_adj(adj_pair,ntstart,ntend,dis_sr1)
-                call process_adj(adj_ref_pair,ntstart_ref,ntend_ref,dis_sr2)
+                call process_adj_trace(adj_pair,ntstart,ntend,dis_sr1)
+                call process_adj_trace(adj_ref_pair,ntstart_ref,ntend_ref,dis_sr2)
 
                 if(DISPLAY_DETAILS) then
                     print*, 'Min/Max of adj :',minval(adj_pair(:)),maxval(adj_pair(:))
@@ -740,12 +703,9 @@ end subroutine Relative_diff
 subroutine finalize(directory,data_name)
     use seismo_parameters
     implicit none
-    integer :: irec
     character(len=MAX_STRING_LEN) :: data_name
     character(len=MAX_FILENAME_LEN) :: char_i,filen,filename
     character(len=MAX_STRING_LEN) :: directory
-    real(kind=CUSTOM_REAL) :: dis_sr
-    real(kind=CUSTOM_REAL) :: adj(NSTEP), adj_vel(NSTEP), adj_acc(NSTEP)
 
     !! write SU adj
     if(compute_adjoint) then
@@ -768,25 +728,6 @@ subroutine finalize(directory,data_name)
             print*,'Currently only work for specfem2D and specfem3D solver'
             stop
         end select
-
-        !! seismotype 
-        if(trim(seismotype) /= "displacement") then
-            if(DISPLAY_DETAILS) then
-                print*
-                print*, trim(seismotype) ,' adjoint'
-            endif
-            do irec=1,NREC
-            adj(:)=seism_adj(:,irec)
-            if(norm2(adj(:))<SMALL_VAL) cycle
-            if(trim(seismotype) == "velocity") then
-                call compute_vel(adj,NSTEP,deltat,NSTEP,adj_vel)
-                seism_adj(:,irec)= - adj_vel(:)
-            elseif(trim(seismotype) == "acceleration") then
-                call compute_acc(adj,NSTEP,deltat,NSTEP,adj_acc)
-                seism_adj(:,irec)=adj_acc(:)
-            endif
-            enddo
-        endif
 
         !! write adjoint source
         write(filename,'(a)') &
@@ -811,11 +752,15 @@ subroutine finalize(directory,data_name)
     deallocate(st_zval)
     deallocate(win_start)
     deallocate(win_end)
+    deallocate(trace_norm)
+    deallocate(time)
+    deallocate(dis_sr)
 
 end subroutine finalize
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine readSU(filename,seism)
     use seismo_parameters
+    implicit none
     integer :: ier,irec
     real(kind=CUSTOM_REAL) :: seism(NSTEP,nrec_proc)
     character(len=MAX_FILENAME_LEN) :: filename
@@ -853,6 +798,7 @@ end subroutine readSU
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine writeSU(filename,seism)
     use seismo_parameters
+    implicit none
     integer :: ier,irec,itime
     real(kind=CUSTOM_REAL) :: seism(NSTEP,nrec_proc)
     character(len=MAX_FILENAME_LEN) :: filename

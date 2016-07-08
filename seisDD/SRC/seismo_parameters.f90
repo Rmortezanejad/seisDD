@@ -17,19 +17,19 @@ INTEGER, PARAMETER :: NGLLX=5
 ! non-structured mesh
 ! due to non matching polynomial degrees along common edges
 INTEGER, PARAMETER :: NGLLZ=5
-INTEGER, PARAMETER :: NGLLY=1
+INTEGER, PARAMETER :: NGLLY=1 
 
 !! solver
 CHARACTER (LEN=20) :: solver='specfem2D'
-CHARACTER (LEN=MAX_STRING_LEN) :: LOCAL_PATH='OUTPUT_FILES'
-CHARACTER (LEN=MAX_STRING_LEN) :: IBOOL_NAME='ibool.bin'
+CHARACTER (LEN=MAX_STRING_LEN) :: LOCAL_PATH='OUTPUT_FILES'  
+CHARACTER (LEN=MAX_STRING_LEN) :: IBOOL_NAME='NSPEC_ibool.bin'  
 
 !! FORWARD MODELNG INFO
-INTEGER, PARAMETER :: NSTEP=4800 
-REAL(KIND=CUSTOM_REAL), PARAMETER :: deltat=0.06 
+INTEGER, PARAMETER :: NSTEP=5001 
+REAL(KIND=CUSTOM_REAL), PARAMETER :: deltat=0.00008 
 REAL(KIND=CUSTOM_REAL), PARAMETER :: t0=0.0 
-REAL(KIND=CUSTOM_REAL), PARAMETER :: f0=0.084 
-INTEGER, PARAMETER :: NREC=2 
+REAL(KIND=CUSTOM_REAL), PARAMETER :: f0=200 
+INTEGER, PARAMETER :: NREC=72 
 INTEGER, PARAMETER :: NSRC=1 
 CHARACTER (LEN=20) :: seismotype='displacement'
 
@@ -37,24 +37,27 @@ CHARACTER (LEN=20) :: seismotype='displacement'
 ! wavelet
 INTEGER, PARAMETER :: Wscale=0 
 !window
-INTEGER, PARAMETER :: is_window=0 
+LOGICAL :: TIME_WINDOW=.true.
 INTEGER, PARAMETER :: window_type=3
-REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmax=3900 
-REAL(KIND=CUSTOM_REAL), PARAMETER :: Vmin=3100
-REAL(kind=CUSTOM_REAL), PARAMETER :: wavelet_len=3.0/f0
-REAL(kind=CUSTOM_REAL), PARAMETER :: taper_len=1.2/f0
-
+REAL(KIND=CUSTOM_REAL), PARAMETER :: window_len=3.0/f0
+REAL(KIND=CUSTOM_REAL), PARAMETER :: taper_len=1.2/f0
+REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_TOP=0.0 
+REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_BOT=0.35 
+REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_TOP=1200 
+REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_BOT=100 
 ! damping
-INTEGER, PARAMETER :: is_laplace=0
+LOGICAL :: DAMPING=.false.
 REAL(KIND=CUSTOM_REAL), PARAMETER :: X_decay=1.0
 REAL(KIND=CUSTOM_REAL), PARAMETER :: T_decay=1.0
-REAL(KIND=CUSTOM_REAL) :: lambda_x=1.0/X_decay 
-REAL(KIND=CUSTOM_REAL) :: lambda_t=1.0/T_decay
 ! mute
-INTEGER, PARAMETER :: mute_near=0 
-REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_near=0 
-INTEGER, PARAMETER :: mute_far=0 
+LOGICAL :: MUTE_NEAR=.true.
+REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_near=7 
+LOGICAL :: MUTE_FAR=.false.
 REAL(KIND=CUSTOM_REAL), PARAMETER :: offset_far=0 
+! event nomralize
+LOGICAL :: EVENT_NORMALIZE=.false.
+! trace nomralize
+LOGICAL :: TRACE_NORMALIZE=.true.
 
 !! measurement type weight 
 INTEGER, PARAMETER :: mtype=MAX_MISFIT_TYPE
@@ -64,35 +67,34 @@ REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=1
 REAL(KIND=CUSTOM_REAL), PARAMETER :: cc_threshold=0.9
 REAL(KIND=CUSTOM_REAL), PARAMETER :: DD_min=SMALL_VAL
 REAL(KIND=CUSTOM_REAL), PARAMETER :: DD_max=LARGE_VAL
-REAL(KIND=CUSTOM_REAL) :: ratio_data_syn=0.01
 
 !! OPTIMIZATION
-CHARACTER (LEN=2) :: opt_scheme='QN'
+CHARACTER (LEN=2) :: opt_scheme='CG'
 INTEGER, PARAMETER :: CGSTEPMAX=10 
 CHARACTER (LEN=2) :: CG_scheme='PR'
 INTEGER, PARAMETER :: BFGS_STEPMAX=4 
 REAL(KIND=CUSTOM_REAL), PARAMETER :: initial_step_length=0.04 
-INTEGER, PARAMETER :: max_step=5
-REAL(KIND=CUSTOM_REAL), PARAMETER :: min_step_length=0.01 
+INTEGER, PARAMETER :: max_step=20
+REAL(KIND=CUSTOM_REAL), PARAMETER :: min_step_length=0.001 
 LOGICAL :: backtracking=.false.
 
 !! CONVERGENCE?
-INTEGER, PARAMETER :: iter_start=1
-INTEGER, PARAMETER :: iter_end=1
+INTEGER, PARAMETER :: iter_start=1 
+INTEGER, PARAMETER :: iter_end=50 
 REAL(KIND=CUSTOM_REAL), PARAMETER :: misfit_ratio_initial=0.001
 REAL(KIND=CUSTOM_REAL), PARAMETER :: misfit_ratio_previous=0.001
 
 !! POST-PROCESSING
-LOGICAL :: smooth=.false.
+LOGICAL :: smooth=.true.
 LOGICAL :: MASK_SOURCE=.false.
 LOGICAL :: MASK_STATION=.false.
-REAL(KIND=CUSTOM_REAL), PARAMETER :: source_radius=8.0
+REAL(KIND=CUSTOM_REAL), PARAMETER :: source_radius=3.0 
 REAL(KIND=CUSTOM_REAL), PARAMETER :: station_radius=4.0
 LOGICAL :: precond=.false.
 REAL(KIND=CUSTOM_REAL), PARAMETER :: wtr_precond=0.1
 
 !! DISPLAY 
-LOGICAL :: DISPLAY_DETAILS=.false.
+LOGICAL :: DISPLAY_DETAILS=.true.
 
 !!!!!!!!!!!!!!!!! gloabl variables !!!!!!!!!!!!!!!!!!!!!!
 INTEGER :: myrank,nproc,iproc
@@ -111,9 +113,12 @@ REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: seism_adj
 REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: seism_adj_AD
 REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: seism_adj_DD
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: st_xval,st_yval,st_zval
+REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: dis_sr
 REAL(KIND=CUSTOM_REAL) :: x_source, y_source, z_source
 INTEGER(KIND=4) :: r4head(60)
 INTEGER(KIND=2) :: header2(2)
+REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: time
+REAL(KIND=CUSTOM_REAL) :: ratio_data_syn=0.01
 
 !! measurement
 CHARACTER(LEN=MAX_STRING_LEN) :: measurement_list
@@ -121,6 +126,15 @@ CHARACTER(LEN=MAX_STRING_LEN) :: misfit_type_list
 
 !! window 
 INTEGER,DIMENSION(:), ALLOCATABLE  :: win_start, win_end
+
+! event nomralize
+REAL(KIND=CUSTOM_REAL) :: event_norm
+! trace nomralize
+REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: trace_norm
+
+!! damping 
+REAL(KIND=CUSTOM_REAL) :: lambda_x=1.0/X_decay
+REAL(KIND=CUSTOM_REAL) :: lambda_t=1.0/T_decay
 
 !! source-timefunction
 LOGICAL :: conv_stf=.false.

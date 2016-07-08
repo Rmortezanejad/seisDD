@@ -48,7 +48,7 @@ do
 
     STARTTIME=$(date +%s)
     if  $ExistDATA && [ -d "$DATA_DIR" ]; then
-        sh $SCRIPTS_DIR/copy_data.sh $isource $data_tag $data_list $WORKING_DIR $DATA_DIR
+        sh $SCRIPTS_DIR/copy_data.sh $isource $data_tag $data_list $WORKING_DIR $DATA_DIR 2>./job_info/error_copy_data
     else
         sh $SCRIPTS_DIR/Forward_${solver}.sh $isource $NPROC_SPECFEM $data_tag $data_list \
             $velocity_dir $SAVE_FORWARD $WORKING_DIR $DATA_DIR $job 2>./job_info/error_Forward_simulation
