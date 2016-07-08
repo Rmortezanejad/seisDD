@@ -154,7 +154,7 @@ subroutine check_iteration(directory)
             is_cont=0
             is_brak=1
             next_step_length=0.0
-            print*, 'stop due to misfit reduction is less than ',misfit_ratio_initial*100,'%', &
+            print*, 'stop due to misfit reduction is less than ',misfit_ratio_previous*100,'%', &
                 ' relative to previous iteration :',&
                 (misfit_hist(niter-1) - misfit_hist(niter))/misfit_hist(niter-1) * 100, '%'
         endif
