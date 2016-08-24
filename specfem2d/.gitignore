@@ -4,7 +4,15 @@ aclocal.m4
 autom4te.cache
 config.log
 config.status
-/Makefile
+Makefile
+
+EXAMPLES
+tests
+doc
+OUTPUT_FILES
+DATA
+AUTHORS
+LICENSE
 
 setup/config.h
 setup/constants.h

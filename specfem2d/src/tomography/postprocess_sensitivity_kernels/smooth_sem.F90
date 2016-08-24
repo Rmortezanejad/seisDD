@@ -307,7 +307,7 @@ program smooth_sem
     if (ier /= 0) stop 'Error allocating dat array'
 
     do iker= 1, nker
-    if(len_trim(kernel_names(iker))>0) then !non-empty
+    if(len_trim(kernel_names(iker))>0) then !YY: non-empty
       ! data file
       write(prname,'(a,i6.6,a)') trim(input_dir)//'/proc',iproc,'_'//trim(kernel_names(iker))//'.bin'
 
@@ -325,7 +325,7 @@ program smooth_sem
         max_old(iker) = maxval(abs(dat(:,:,:)))
         min_old(iker) = minval(abs(dat(:,:,:)))
       endif
-  endif !non-empty
+  endif !YY: non-empty
   enddo !iker
 
     imask = -1
@@ -418,6 +418,7 @@ program smooth_sem
   deallocate(tk,bk)
 
   do iker= 1, nker
+  if(len_trim(kernel_names(iker))>0) then !YY non-empty kernel name
     max_new(iker) = maxval(abs(dat_smooth(:,:,:,iker)))
     min_new(iker) = minval(abs(dat_smooth(:,:,:,iker)))
     ! file output
@@ -430,6 +431,7 @@ program smooth_sem
     write(IOUT) dat_smooth(:,:,:,iker) * zstore_me(:,:,:)**z_precond
     close(IOUT)
     if (myrank == 0) print *,'written: ',trim(ks_file)
+endif !YY
   enddo
 
   ! frees memory

@@ -153,6 +153,8 @@
   character(len=3) :: comp(3)
   character(len=MAX_STRING_LEN) :: filename
 
+  logical :: st !YY
+
   ! initializes temporary array
   ! note: we need to explicitly initialize the full array,
   !       otherwise it can lead to a floating overflow problem (with intel compiler 15.x)
@@ -176,6 +178,9 @@
 
       ! reads in ascii adjoint source files **.adj
       filename = 'SEM/'//trim(adj_source_file) // '.'// comp(icomp) // '.adj'
+
+      inquire(file=filename,exist=st) !YY
+      if(st) then !YY
       open(unit = IIN, file = trim(filename), iostat = ier)
       if (ier /= 0) then
         print *,'Error: could not find adjoint source file ',trim(filename)
@@ -187,6 +192,9 @@
         read(IIN,*) junk, adj_src_s(itime,icomp)
       enddo
       close(IIN)
+  else !YY
+      adj_src_s(:,icomp)=0.d0 !YY
+  endif !YY
     enddo
 
   else if (seismotype == 4) then
@@ -294,6 +302,8 @@
 
   real(kind=CUSTOM_REAL), dimension(:,:,:,:), allocatable :: adj_sourcearray
 
+  logical :: st_x, st_z !YY
+
   ! opens adjoint source files in SU format
   if (seismotype == 4 .or. seismotype == 6) then
     ! pressure/potential type
@@ -305,12 +315,18 @@
     if (P_SV) then
       ! P_SV-case
       write(filename, "('./SEM/Ux_file_single.su.adj')")
+      inquire(file=filename,exist=st_x) !YY
+      if(st_x) then !YY
       open(111,file=trim(filename),access='direct',recl=240+4*NSTEP,iostat = ier)
       if (ier /= 0) call exit_MPI(myrank,'file '//trim(filename)//' does not exist')
-
+  endif !YY
+      
       write(filename, "('./SEM/Uz_file_single.su.adj')")
+      inquire(file=filename,exist=st_z) !YY
+      if(st_z) then !YY
       open(113,file=trim(filename),access='direct',recl=240+4*NSTEP,iostat = ier)
       if (ier /= 0) call exit_MPI(myrank,'file '//trim(filename)//' does not exist')
+  endif !YY
     else
       ! SH-case
       write(filename, "('./SEM/Uy_file_single.su.adj')")
@@ -345,11 +361,14 @@
         ! displacement/velocity/acceleration
         if (P_SV) then
           ! P_SV-case
+          if(st_x) then !YY
           read(111,rec=irec,iostat=ier) r4head, adj_src_s(:,1)
           if (ier /= 0) call exit_MPI(myrank,'file '//trim(filename)//' read error')
-
+      endif !YY
+          if(st_z) then !YY
           read(113,rec=irec,iostat=ier) r4head, adj_src_s(:,2)
           if (ier /= 0) call exit_MPI(myrank,'file '//trim(filename)//' read error')
+      endif !YY
         else
           ! SH-case
           read(112,rec=irec,iostat=ier) r4head, adj_src_s(:,1)

@@ -65,20 +65,20 @@ MPILIBS += -L/usr/local/hdf5/intel-12.1/openmpi-1.6.3/1.8.12/lib64
 #######################################
 
 ## serial or parallel
-MPI = yes
-#MPI = no
+#MPI = yes
+MPI = no
 
-FCLINK = $(MPIFCCOMPILE_CHECK)
-#FCLINK = $(FCCOMPILE_CHECK)
+#FCLINK = $(MPIFCCOMPILE_CHECK)
+FCLINK = $(FCCOMPILE_CHECK)
 
-COND_MPI_CPPFLAGS = -DWITH_MPI
-#COND_MPI_CPPFLAGS =
+#COND_MPI_CPPFLAGS = -DWITH_MPI
+COND_MPI_CPPFLAGS =
 
-MPI_INCLUDES =  -I/usr/local/openmpi/1.6.3/intel130/x86_64/include
+MPI_INCLUDES = 
 
 # fortran compiler setting
-F90 = $(MPIFCCOMPILE_CHECK) -DUSE_MPI
-#F90 = $(FCCOMPILE_CHECK)
+#F90 = $(MPIFCCOMPILE_CHECK) -DUSE_MPI
+F90 = $(FCCOMPILE_CHECK)
 
 #######################################
 ####
@@ -86,14 +86,14 @@ F90 = $(MPIFCCOMPILE_CHECK) -DUSE_MPI
 ####
 #######################################
 
-SCOTCH=yes
-#SCOTCH=no
+#SCOTCH=yes
+SCOTCH=no
 
-USE_BUNDLED_SCOTCH = 1
+USE_BUNDLED_SCOTCH = 0
 
-SCOTCH_DIR = ./src/meshfem2D/scotch
-SCOTCH_INCDIR = ./src/meshfem2D/scotch/include
-SCOTCH_LIBDIR = ./src/meshfem2D/scotch/lib
+SCOTCH_DIR = 
+SCOTCH_INCDIR = 
+SCOTCH_LIBDIR = 
 
 SCOTCH_INC = -I${SCOTCH_INCDIR}
 SCOTCH_LIBS = -L${SCOTCH_LIBDIR} -lscotch -lscotcherr
