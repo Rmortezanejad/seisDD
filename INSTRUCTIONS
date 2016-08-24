@@ -10,16 +10,16 @@ source ~/.bashrc
 echo $seisDD
 # make sure $seisDD is the same as '/path/to/seisDD' 
 
-# with this specfem2d, I added an example of using tomo file to input attentuaton model
+# specfem2d
 # compile with ifort and mpi
 module load intel-mkl/11.0/1/64
 module load intel/13.0/64/13.0.1.117
 cd $seisDD/specfem2d
-## with mpi (recommended) for parallel simulation
+## with mpi for parallel simulation
 module load openmpi/intel-13.0/1.6.3/64
 ./configure FC=ifort --with-mpi
 ## without mpi for serial simulation (queue='serial') 
-./configure FC=ifort 
+./configure FC=ifort   #(recommanded)
 ## or 
 ./configure FC=gfortran
 # compile
@@ -48,33 +48,3 @@ cd $seisDD/GJI2016
 # parameter: inversion parameter file including path setting and inversion parameters
 # SU_process: preprocessing procedure using SU package (optional)
 # run_this_example.sh (shared for all examples)
-#
-# How to prepare gll model
-# see specfem2d/EXAMPLES for demo
-# 1. prepare tomo model on regular grids
-  !
-  ! ORIGIN_X ORIGIN_Z END_X END_Z
-  ! SPACING_X SPACING_Z
-  ! NX NZ
-  ! VP_MIN VP_MAX VS_MIN VS_MAX RHO_MIN RHO_MAX QKappa_MIN QKappa_MAX Qmu_MIN Qmu_MAX  
-  ! x(1) z(0) vp vs rho QKappa Qmu
-  ! x(2) z(0) vp vs rho QKappa Qmu
-  ! ...
-  ! x(NX) z(0) vp vs rho QKappa Qmu
-  ! x(1) z(1) vp vs rho QKappa Qmu
-  ! x(2) z(1) vp vs rho QKappa Qmu
-  ! ...
-  ! x(NX) z(1) vp vs rho QKappa Qmu
-  ! x(1) z(2) vp vs rho QKappa Qmu
-  ! ...
-  ! ...
-  ! x(NX) z(NZ) vp vs rho QKappa Qmu
-  !
-# 2. specfem forward modeling, input tomo, output gll binary model
- vim DATA/Par_file
- MODEL = default
- SAVE_MODEL = binary
- nmodels=1
- 1 -1 0 0 0 0 0 0 0 0 0 0 0 0 0
- TOMOGRAPHY_FILE = /your/tomo/file
-# output models are in DATA/proc00000****.bin
