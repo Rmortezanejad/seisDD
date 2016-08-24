@@ -32,10 +32,17 @@ sed -e "s#^SAVE_FORWARD.*#SAVE_FORWARD = .$SAVE_FORWARD. #g"  $FILE > temp; mv t
 ##### forward simulation (data) #####
 ./bin/xmeshfem2D > OUTPUT_FILES/output_mesher.txt
 
-if [ $isource -eq 1 ] ; then  
-    echo "mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D"
+if [ "$NPROC_SPECFEM" -eq 1 ]; then
+    if [ $isource -eq 1 ] ; then
+        echo "./bin/xspecfem2D"
+    fi
+    ./bin/xspecfem2D > OUTPUT_FILES/output_adjoint.txt
+else
+    if [ $isource -eq 1 ] ; then
+        echo "mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D"
+    fi
+    mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D > OUTPUT_FILES/output_adjoint.txt
 fi
-mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D > OUTPUT_FILES/output_adjoint.txt
 
 #### mask source 
 # Source location

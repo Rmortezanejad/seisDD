@@ -1,8 +1,8 @@
 # The default system is on slurm used at Princeton
 #
 # seisDD 
-# download seisDD from github
-git clone https://github.com/yanhuay/seisDD 
+# download devel branch seisDD from github
+git clone https://github.com/yanhuay/seisDD --branch devel 
 # set seisDD path
 echo '# set seisDD path' >> ~/.bashrc
 echo 'export seisDD=/path/of/seisDD' >> ~/.bashrc 
@@ -19,9 +19,10 @@ cd $seisDD/specfem2d
 module load openmpi/intel-13.0/1.6.3/64
 ./configure FC=ifort --with-mpi
 ## without mpi for serial simulation (queue='serial') 
-./configure FC=ifort
+./configure FC=ifort 
+## or 
+./configure FC=gfortran
 # compile
-make clean
 make all
 
 cd $seisDD/seisDD/lib
