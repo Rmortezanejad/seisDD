@@ -15,13 +15,15 @@ echo $seisDD
 module load intel-mkl/11.0/1/64
 module load intel/13.0/64/13.0.1.117
 cd $seisDD/specfem2d
+make clean
 ## with mpi (recommended) for parallel simulation
 module load openmpi/intel-13.0/1.6.3/64
 ./configure FC=ifort --with-mpi
 ## without mpi for serial simulation (queue='serial') 
 ./configure FC=ifort
+# or 
+./configure FC=gfortran
 # compile
-make clean
 make all
 
 cd $seisDD/seisDD/lib
