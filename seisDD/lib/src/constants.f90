@@ -61,9 +61,10 @@ real(kind=CUSTOM_REAL), parameter :: REVERSE_FFT=-1.0
 real(kind=CUSTOM_REAL), parameter :: CUTOFF=PI
 ! water level for effective spectrum 
 real(kind=CUSTOM_REAL), parameter :: WTR=0.05
+! water level for envelope
 real(kind=CUSTOM_REAL), parameter :: wtr_env=0.20
 ! water level for mtm 
-real(kind=CUSTOM_REAL), parameter ::wtr_mtm=1.e-10
+real(kind=CUSTOM_REAL), parameter :: wtr_mtm=1.e-10
 ! multitaper
 real(kind=CUSTOM_REAL), parameter :: mt_threshold=0.9! eigenvalue threshold
 !integer, parameter :: MW=10 ! number of segments of uncorrelated frequency points 

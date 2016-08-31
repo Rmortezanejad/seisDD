@@ -91,6 +91,7 @@ LOGICAL :: MASK_STATION=.false.
 REAL(KIND=CUSTOM_REAL), PARAMETER :: source_radius=0.0
 REAL(KIND=CUSTOM_REAL), PARAMETER :: station_radius=0.0
 LOGICAL :: precond=.false.
+CHARACTER (LEN=MAX_STRING_LEN) :: precond_name=''
 REAL(KIND=CUSTOM_REAL), PARAMETER :: wtr_precond=0.1
 
 !! DISPLAY 
@@ -121,8 +122,8 @@ REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: time
 REAL(KIND=CUSTOM_REAL) :: ratio_data_syn=0.01
 
 !! measurement
-CHARACTER(LEN=MAX_STRING_LEN) :: measurement_list
-CHARACTER(LEN=MAX_STRING_LEN) :: misfit_type_list
+CHARACTER (LEN=MAX_STRING_LEN) :: measurement_list
+CHARACTER (LEN=MAX_STRING_LEN) :: misfit_type_list
 
 !! window 
 INTEGER,DIMENSION(:), ALLOCATABLE  :: win_start, win_end

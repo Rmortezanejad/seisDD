@@ -121,18 +121,18 @@ do
         mkdir OUTPUT_FILES/DATABASES_MPI
         cp $SUBMIT_RESULT/misfit_kernel/proc*external_mesh.bin OUTPUT_FILES/DATABASES_MPI/
     fi
-    mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_list $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_misfit_kernel_$iter
+    mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_name $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_misfit_kernel_$iter
 
     if $smooth ; then
         echo 
         echo "smooth misfit kernel ... "
-        mpirun -np $NPROC_SPECFEM ./bin/xsmooth_sem $smooth_x $smooth_z $z_precond $kernel_list,$precond_list  $SUBMIT_RESULT/misfit_kernel/ $SUBMIT_RESULT/misfit_kernel/ $GPU_MODE 2> ./job_info/error_smooth_kernel_$iter
+        mpirun -np $NPROC_SPECFEM ./bin/xsmooth_sem $smooth_x $smooth_z $z_precond $kernel_list,$precond_name  $SUBMIT_RESULT/misfit_kernel/ $SUBMIT_RESULT/misfit_kernel/ $GPU_MODE 2> ./job_info/error_smooth_kernel_$iter
     fi
 
     echo 
     echo "optimization --> gradient/direction ... "
     mkdir -p $SUBMIT_RESULT/optimizer
-    ./bin/optimization.exe $NPROC_SPECFEM $SUBMIT_RESULT $kernel_list $precond_list  $model_list $iter 2> ./job_info/error_optimizer_$iter
+    ./bin/optimization.exe $NPROC_SPECFEM $SUBMIT_RESULT $kernel_list $model_list $iter 2> ./job_info/error_optimizer_$iter
 
     echo
     echo 'line search along the update direction ......'

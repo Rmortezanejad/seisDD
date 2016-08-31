@@ -7,7 +7,12 @@ source parameter
 currentdir=`pwd`
 EXE_DIR="$currentdir/bin"        # exacutable files directory
 
-############################# parameter files ############################################################### 
+############################# modify constants.f90 ##########################################################
+FILE="$EXE_DIR/constants.f90"
+if [ ! -z "$wtr_env" ]; then
+    sed -e "s#^real(kind=CUSTOM_REAL), parameter :: wtr_env=.*#real(kind=CUSTOM_REAL), parameter :: wtr_env=$wtr_env #g"  $FILE > temp;  mv temp $FILE
+fi
+############################# modify seismo_parameters.f90 ################################################## 
 FILE="$EXE_DIR/seismo_parameters.f90"
 sed -e "s#^Job_title=.*#Job_title=$Job_title #g"  $FILE > temp;  mv temp $FILE
 
@@ -181,6 +186,7 @@ if [ ! -z "$station_radius" ]; then
 fi
 if [ ! -z "$precond" ]; then
     sed -e "s#^LOGICAL :: precond=.*#LOGICAL :: precond=.$precond.#g"  $FILE > temp;  mv temp $FILE
+    sed -e "s#^CHARACTER (LEN=MAX_STRING_LEN) :: precond_name=.*#CHARACTER (LEN=MAX_STRING_LEN) :: precond_name='$precond_name'#g"  $FILE > temp;  mv temp $FILE
 fi
 if [ ! -z "$wtr_precond" ]; then
     sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: wtr_precond=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: wtr_precond=$wtr_precond #g" $FILE > temp;  mv temp $FILE

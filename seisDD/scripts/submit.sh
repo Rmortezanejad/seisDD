@@ -28,6 +28,7 @@ echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo
 echo
 
+echo " select workflow ..."
 workflow_DIR="$package_path/workflow"
 
 if [ "$job" ==  "modeling" ] || [ "$job" ==  "Modeling" ]
@@ -57,16 +58,26 @@ fi
 echo
 echo " renew parameter file ..."
 cp $package_path/SRC/seismo_parameters.f90 ./bin/
+cp $package_path/lib/src/constants.f90 ./bin/
 cp $package_path/scripts/renew_parameter.sh ./
 ./renew_parameter.sh
 
 echo 
-echo " complile source codes ... "
-rm -rf *.mod make_file
+echo " complile lib codes ... "
+rm -rf *.mod make_*
+cp $package_path/lib/make_lib ./make_lib
+FILE="make_lib"
+sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/lib/src#g"  $FILE > temp;  mv temp $FILE
+sed -e "s#^MOD_DIR=.*#MOD_DIR=./bin#g"  $FILE > temp;  mv temp $FILE
+sed -e "s#^LIB_preprocess=.*#LIB_preprocess=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
+make -f make_lib clean
+make -f make_lib
+echo 
+read -rsp $'Press any key to continue compiling source codes ...\n' -n1 key
 cp $package_path/make/make_$compiler ./make_file
-cp $package_path/lib/constants.mod ./
 FILE="make_file"
 sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/SRC#g"  $FILE > temp;  mv temp $FILE
+sed -e "s#^LIB_seismo=.*#LIB_seismo=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
 make -f make_file clean
 make -f make_file
 
@@ -80,7 +91,7 @@ echo
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 echo
 
-echo "submit job"
+echo "submit job ..."
 echo
 if [ $system == 'slurm' ]; then
     echo "slurm system ..."
