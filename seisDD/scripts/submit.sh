@@ -6,14 +6,6 @@ echo
 echo " source parameter file ..." 
 source parameter
 
-echo
-echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-echo
-echo " Copy specfem executavles ..."
-rm -rf bin
-mkdir bin
-cp -r $specfem_path/bin/* ./bin/
-
 echo 
 echo " create new job_info file ..."
 rm -rf job_info
@@ -73,7 +65,7 @@ sed -e "s#^LIB_preprocess=.*#LIB_preprocess=./bin/seismo.a#g"  $FILE > temp;  mv
 make -f make_lib clean
 make -f make_lib
 echo 
-read -rsp $'Press any key to continue compiling source codes ...\n' -n1 key
+read -rsp $'Press any key to compile source codes ...\n' -n1 key
 cp $package_path/make/make_$compiler ./make_file
 FILE="make_file"
 sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/SRC#g"  $FILE > temp;  mv temp $FILE
