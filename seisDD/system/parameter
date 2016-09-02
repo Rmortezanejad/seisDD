@@ -5,4 +5,5 @@ max_nproc_per_node=16 # max number of cpus per node
 ntasks=4 # ntasks
 NPROC=4  # cpu for each task
 WallTime=10 # request time
-
+FC='ifort'
+MPIFC='mpif90'

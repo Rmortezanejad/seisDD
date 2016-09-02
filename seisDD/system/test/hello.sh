@@ -17,5 +17,3 @@ echo "hello.sh iproc=$iproc"
 
 # run mpi exe 
 mpirun -np $NPROC test/hello_mpi.exe
-
-

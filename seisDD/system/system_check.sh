@@ -13,8 +13,9 @@ mkdir job_info
 
 echo 
 echo " compile hello.f90"
-ifort test/hello.f90  -o test/hello.exe
-mpif90 -DUSE_MPI -o test/hello_mpi.exe -g -O3 -xSSSE3 -no-ip -fno-fnalias -fno-alias -vec-report1 -assume byterecl -sox -cpp  -traceback -w -ftz test/hello_mpi.f90
+rm -rf test/*.exe
+${FC} test/hello.f90  -o test/hello.exe
+${MPIFC} -DUSE_MPI -o test/hello_mpi.exe -g -O3 -xSSSE3 -no-ip -fno-fnalias -fno-alias -vec-report1 -assume byterecl -sox -cpp  -traceback -w -ftz test/hello_mpi.f90
 
 echo 
 echo " edit request nodes and tasks ..."
