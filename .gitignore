@@ -27,6 +27,10 @@ specfem2d/EXAMPLES/*
 seisDD/lib/*
 !seisDD/lib/src
 
+# system 
+seisDD/system/job_info
+seisDD/system/test/*exe
+
 # user private EXAMPLES folder
 EXAMPLES/*
 !EXAMPLES/readme

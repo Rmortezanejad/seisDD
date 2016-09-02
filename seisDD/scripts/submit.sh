@@ -23,21 +23,25 @@ echo
 echo " select workflow ..."
 workflow_DIR="$package_path/workflow"
 
-if [ "$job" ==  "modeling" ] || [ "$job" ==  "Modeling" ]
+var="modeling"
+if [ "${job,,}" == "${var,,}"  ]
 then
     echo " ########################################################"
     echo " Forward modeling .." 
     echo " ########################################################"
     cp $workflow_DIR/Modeling.sh $Job_title.sh
 
-elif [ "$job" ==  "kernel" ] || [ "$job" ==  "Kernel" ]
+var="kernel"
+elif [ "${job,,}" == "${var,,}"  ]
 then
     echo " ########################################################"
     echo " Adjoint Inversion .." 
     echo " ########################################################"
     cp $workflow_DIR/Kernel.sh $Job_title.sh
 
-elif [ "$job" ==  "inversion" ] || [ "$job" ==  "FWI" ]
+var1="inversion"
+var2="fwi"
+elif [ "${job,,}" == "${var1,,}"  ] || [ "${job,,}" == "${var2,,}"  ]
 then
     echo " ########################################################"
     echo " Adjoint Inversion .." 
@@ -76,8 +80,9 @@ make -f make_file
 echo 
 echo " edit request nodes and tasks ..."
 nproc=$NPROC_SPECFEM
+ntaskspernode=$(echo "$max_nproc_per_node $nproc" | awk '{ print $1/$2 }')
 nodes=$(echo $(echo "$ntasks $nproc $max_nproc_per_node" | awk '{ print $1*$2/$3 }') | awk '{printf("%d\n",$0+=$0<0?0:0.999)}')
-echo " Request $nodes nodes, $ntasks tasks, $nproc cpus per task "
+echo " Request $nodes nodes, $ntasks tasks, $ntaskspernode tasks per node, $nproc cpus per task "
 
 echo
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
@@ -87,12 +92,13 @@ echo "submit job ..."
 echo
 if [ $system == 'slurm' ]; then
     echo "slurm system ..."
-    echo "sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh"
-    sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh
+    echo "sbatch -p $queue --nodes=$nodes --ntasks=$ntasks --ntasks-per-node=$ntaskspernode --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh"
+    sbatch -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh
 
 elif [ $system == 'pbs' ]; then
     echo "pbs system ..."
     echo
-    qsub -q $queue -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh
+    echo "qsub -q $queue select=$nodes:ncpus=$max_nproc_per_node:mpiprocs=$nproc -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh"
+    qsub -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh
 fi
 echo
