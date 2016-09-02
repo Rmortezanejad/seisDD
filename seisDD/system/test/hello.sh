@@ -12,7 +12,10 @@ fi
 
 echo "hello.sh iproc=$iproc"
 
+# run serial exe 
+./test/hello.exe
+
 # run mpi exe 
-mpirun -np $NPROC test/hello.exe
+mpirun -np $NPROC test/hello_mpi.exe
 
 
