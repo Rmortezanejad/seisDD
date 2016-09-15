@@ -7,10 +7,11 @@ compute_adjoint=$2
 
 # local id (from 0 to $ntasks-1)
 if [ $system == 'slurm' ]; then
-    iproc=$SLURM_PROCID  
+    iproc=$SLURM_PROCID  #
 elif [ $system == 'pbs' ]; then
     iproc=$PBS_VNODENUM
 fi
+#iproc=${OMPI_COMM_WORLD_RANK}
 
 # allocate tasks over all sources
 # ntasks in parallel and nsrc in total

@@ -23,33 +23,42 @@ echo
 echo " select workflow ..."
 workflow_DIR="$package_path/workflow"
 
-var="modeling"
-if [ "${job,,}" == "${var,,}"  ]
+var1="modeling"
+var2="kernel"
+var3="inversion"
+var4="fwi"
+var5="misfit"
+if [ "${job,,}" == "${var1,,}"  ]
 then
     echo " ########################################################"
-    echo " Forward modeling .." 
+    echo " Forward modeling ..." 
     echo " ########################################################"
     cp $workflow_DIR/Modeling.sh $Job_title.sh
 
-var="kernel"
-elif [ "${job,,}" == "${var,,}"  ]
+elif [ "${job,,}" == "${var2,,}"  ]
 then
     echo " ########################################################"
-    echo " Adjoint Inversion .." 
+    echo " Kernel Construction ..." 
     echo " ########################################################"
-    cp $workflow_DIR/Kernel.sh $Job_title.sh
-
-var1="inversion"
-var2="fwi"
-elif [ "${job,,}" == "${var1,,}"  ] || [ "${job,,}" == "${var2,,}"  ]
+    cp $workflow_DIR/Kernel.sh $Job_title.sh  
+elif [ "${job,,}" == "${var3,,}"  ] || [ "${job,,}" == "${var4,,}"  ]
 then
     echo " ########################################################"
-    echo " Adjoint Inversion .." 
+    echo " Adjoint Inversion ..." 
     echo " ########################################################"
     cp $workflow_DIR/AdjointInversion.sh $Job_title.sh
+elif [ "${job,,}" == "${var5,,}"  ]
+then
+    echo " ########################################################"
+    echo " Misfit Evaluation ..."
+    echo " ########################################################"
+    cp $workflow_DIR/Misfit.sh $Job_title.sh
 else
     echo "Wrong job: $job"
+    exit
 fi
+echo 
+read -rsp $'Press any key to continue if workflow is selected correctly ...\n' -n1 key
 
 echo
 echo " renew parameter file ..."
@@ -69,13 +78,16 @@ sed -e "s#^LIB_preprocess=.*#LIB_preprocess=./bin/seismo.a#g"  $FILE > temp;  mv
 make -f make_lib clean
 make -f make_lib
 echo 
-read -rsp $'Press any key to compile source codes ...\n' -n1 key
+read -rsp $'Press any key to continue if lib is compiled successfully ...\n' -n1 key
+
 cp $package_path/make/make_$compiler ./make_file
 FILE="make_file"
 sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/SRC#g"  $FILE > temp;  mv temp $FILE
 sed -e "s#^LIB_seismo=.*#LIB_seismo=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
 make -f make_file clean
 make -f make_file
+echo 
+read -rsp $'Press any key to continue if source codes are compiled successfully ...\n' -n1 key
 
 echo 
 echo " edit request nodes and tasks ..."
@@ -92,13 +104,13 @@ echo "submit job ..."
 echo
 if [ $system == 'slurm' ]; then
     echo "slurm system ..."
-    echo "sbatch -p $queue --nodes=$nodes --ntasks=$ntasks --ntasks-per-node=$ntaskspernode --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh"
-    sbatch -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh
+    echo "sbatch -p $queue --nodes=$nodes --ntasks=$ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh"
+    sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh
 
 elif [ $system == 'pbs' ]; then
     echo "pbs system ..."
     echo
     echo "qsub -q $queue select=$nodes:ncpus=$max_nproc_per_node:mpiprocs=$nproc -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh"
-    qsub -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh
+    qsub -q $queue -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh
 fi
 echo

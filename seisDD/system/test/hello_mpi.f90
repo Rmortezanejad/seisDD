@@ -17,7 +17,7 @@ program hello_mpi
     myrank = 0
 #endif
 
-print*, "Hello_mpi from process ", myrank," of ", nproc-1
+print*, "Hello_mpi from process ", myrank," of ", nproc
 
 #ifdef USE_MPI
     ! stop all the processes and exit

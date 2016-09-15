@@ -32,13 +32,12 @@ echo "submit job ..."
 echo
 if [ $system == 'slurm' ]; then
     echo "slurm system ..."
-    echo "sbatch -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output test/test_job.sh"
-    sbatch -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output test/test_job.sh
-
+    echo "sbatch -p $queue -N $nodes -n $ntasks -c $nproc -t $WallTime -e job_info/error -o job_info/output test/test_job.sh"
+    sbatch -p $queue -N $nodes -n $ntasks -c $nproc -t $WallTime -e job_info/error -o job_info/output test/test_job.sh
 elif [ $system == 'pbs' ]; then
     echo "pbs system ..."
     echo
-    echo "qsub -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  test/test_job.sh"
-    qsub -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  test/test_job.sh
+    echo "qsub -q $queue -l nodes=$nodes:ppn=$max_nproc_per_node -l walltime=$WallTime -e job_info/error -o job_info/output  test/test_job.sh"
+    qsub -q $queue -l nodes=$nodes:ppn=$max_nproc_per_node -l walltime=$WallTime -e job_info/error -o job_info/output  test/test_job.sh
 fi
 echo

@@ -188,6 +188,7 @@ subroutine initialize(directory,data_name)
     logical :: ex_stf
     real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: temp
     integer :: irow, ncolum
+    REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: noise
 
     !! data file format
     filen='empty'
@@ -243,6 +244,7 @@ subroutine initialize(directory,data_name)
         allocate(seism_adj(NSTEP,nrec_proc))
         allocate(seism_adj_AD(NSTEP,nrec_proc))
         allocate(seism_adj_DD(NSTEP,nrec_proc))
+        allocate(noise(NSTEP,nrec_proc))
         allocate(st_xval(nrec_proc))
         allocate(st_yval(nrec_proc))
         allocate(st_zval(nrec_proc))
@@ -270,6 +272,12 @@ subroutine initialize(directory,data_name)
 
         ! allocate obs and syn
         call readSU(filename_obs,seism_obs)
+        ! generate random noise to obs between 0 and 1
+        call random_number(noise)
+        ! [-1 1]*noise-level   
+        noise=(noise-0.5)*2*maxval(abs(seism_obs))*noise_level
+        ! add noise 
+        seism_obs=seism_obs+noise
         call readSU(filename_syn,seism_syn)
         do irec=1,nrec_proc
         dis_sr(irec)=sqrt((st_xval(irec)-x_source)**2 &            
@@ -283,6 +291,7 @@ subroutine initialize(directory,data_name)
             print*,'Min / Max of seism_syn : ',&
                 minval(seism_syn(:,:)),maxval(seism_syn(:,:))
         endif
+        deallocate(noise)
     endif ! exist
 
 end subroutine initialize

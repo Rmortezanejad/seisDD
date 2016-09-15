@@ -53,6 +53,9 @@ fi
 if [ ! -z "$seismotype" ]; then
     sed -e "s#^CHARACTER (LEN=20) :: seismotype=.*#CHARACTER (LEN=20) :: seismotype='$seismotype'#g"  $FILE > temp;  mv temp $FILE
 fi
+if [ ! -z "${noise_level}" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: noise_level=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: noise_level=${noise_level} #g"  $FILE > temp;  mv temp $FILE
+fi
 
 ## PRE-PROCESSING
 # wavelet

@@ -49,4 +49,3 @@ fi
 export xs=$(awk -v "line=$isource" 'NR==line { print $1 }' DATA/sources.dat)
 export zs=$(awk -v "line=$isource" 'NR==line { print $2 }' DATA/sources.dat) 
 mpirun -np $NPROC_SPECFEM ./bin/mask_func.exe $xs $zs DATA/ OUTPUT_FILES/ 
-

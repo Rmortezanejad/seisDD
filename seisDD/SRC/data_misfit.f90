@@ -35,44 +35,52 @@ program data_misfit
     ! sum event_misfit
     call sum_misfit(input_dir,misfit_cur,NPROC_DATA)
 
-    !!! add current result to search history
-    write(filename, "(a)") trim(output_dir)//'/misfit/data_misfit_hist_detail'
+    !!! summed data_misfit
+    write(filename, "(a)") trim(output_dir)//'/misfit/data_misfit'
     OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
-    write(IOUT,'(i,f15.5,e15.8)') iter,step_length,misfit_cur
+    write(IOUT,'(e15.8)') misfit_cur
     close(IOUT)
 
+    if(iter>0) then ! inversion
+        !!! add current result to search history
+        write(filename, "(a)") trim(output_dir)//'/misfit/data_misfit_hist_detail'
+        OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
+        write(IOUT,'(i,f15.5,e15.8)') iter,step_length,misfit_cur
+        close(IOUT)
 
-    ! check search status 
-    if (.not.compute_adjoint) then 
-        call check_linesearch(output_dir,iter) 
+        ! check search status 
+        if (step_length>0.0) then 
+            call check_linesearch(output_dir,iter) 
 
-    else
-        if(iter==1)  then
-            !!! misfit hist for iteration 
-            write(filename,'(a)') trim(output_dir)//'/misfit/data_misfit_hist.dat'
-            OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
-            write(IOUT,'(I5,e15.8)') iter-1,misfit_cur
-            close(IOUT)
-        endif
-        ! search status initilization
-        is_cont=1
-        is_done=0
-        is_brak=0
-        next_step_length=initial_step_length
-        optimal_step_length=0.0    
-        call check_iteration(output_dir)
+        else
+            if(iter==1)  then
+                !!! misfit hist for iteration 
+                write(filename,'(a)') trim(output_dir)//'/misfit/data_misfit_hist.dat'
+                OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
+                write(IOUT,'(I5,e15.8)') iter-1,misfit_cur
+                close(IOUT)
+            endif
+            ! search status initilization
+            is_cont=1
+            is_done=0
+            is_brak=0
+            next_step_length=initial_step_length
+            optimal_step_length=0.0    
+            call check_iteration(output_dir)
 
-    endif ! compute_adjoint
+        endif ! compute_adjoint
 
-    !! SAVE search status
-    write(filename,'(a)') trim(output_dir)//'/misfit/search_status.dat'
-    OPEN (IOUT, FILE=trim(filename))
-    write(IOUT,'(I5)') is_cont
-    write(IOUT,'(I5)') is_done
-    write(IOUT,'(I5)') is_brak
-    write(IOUT,'(f15.5)') next_step_length
-    write(IOUT,'(f15.5)') optimal_step_length
-    close(IOUT)
+        !! SAVE search status
+        write(filename,'(a)') trim(output_dir)//'/misfit/search_status.dat'
+        OPEN (IOUT, FILE=trim(filename))
+        write(IOUT,'(I5)') is_cont
+        write(IOUT,'(I5)') is_done
+        write(IOUT,'(I5)') is_brak
+        write(IOUT,'(f15.5)') next_step_length
+        write(IOUT,'(f15.5)') optimal_step_length
+        close(IOUT)
+    endif ! iter>0
+
 
 end program data_misfit
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

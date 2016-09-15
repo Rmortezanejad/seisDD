@@ -61,7 +61,7 @@ velocity_dir=$target_velocity_dir
 if [ $system == 'slurm' ]; then
     srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
 elif [ $system == 'pbs' ]; then 
-    pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
+    pbsdsh -v $SCRIPTS_DIR/prepare_data.sh $velocity_dir
 fi
 
 if [ -d "$SUBMIT_RESULT/m_$(($iter_start-1))" ]; then
@@ -85,7 +85,7 @@ do
     if [ $system == 'slurm' ]; then
         srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_current_$iter
     elif [ $system == 'pbs' ]; then
-        pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_current_$iter
+        pbsdsh -v $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 
     fi
 
     echo
@@ -159,7 +159,7 @@ do
         if [ $system == 'slurm' ]; then
             srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_update_$iter
         elif [ $system == 'pbs' ]; then
-            pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_update_$iter
+            pbsdsh -v $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint
         fi
 
         echo

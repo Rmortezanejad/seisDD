@@ -12,6 +12,7 @@ if [ $system == 'slurm' ]; then
 elif [ $system == 'pbs' ]; then
     iproc=$PBS_VNODENUM
 fi
+#iproc=${OMPI_COMM_WORLD_RANK}
 
 # allocate tasks over all sources
 # ntasks in parallel and nsrc in total
@@ -59,3 +60,4 @@ do
      echo "Data preparation took $Ttaken seconds"
  fi
 done
+
