@@ -167,7 +167,7 @@ subroutine WD_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     if(nlen<1 .or. nlen>npts) print*,'check nlen ',nlen
 
     !! WD misfit
-    !const = sum(d_tw(1:nlen)**2)*deltat
+    const = sum(d_tw(1:nlen)**2)*deltat
     do i=1,nlen 
     write(IOUT,*) (s_tw(i)-d_tw(i))*sqrt(deltat)/sqrt(const)
     enddo
