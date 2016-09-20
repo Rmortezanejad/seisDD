@@ -35,13 +35,7 @@ program data_misfit
     ! sum event_misfit
     call sum_misfit(input_dir,misfit_cur,NPROC_DATA)
 
-    !!! summed data_misfit
-    write(filename, "(a)") trim(output_dir)//'/misfit/data_misfit'
-    OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
-    write(IOUT,'(e15.8)') misfit_cur
-    close(IOUT)
-
-    if(iter>0) then ! inversion
+    if(iter>0) then ! doing inversion/kernel
         !!! add current result to search history
         write(filename, "(a)") trim(output_dir)//'/misfit/data_misfit_hist_detail'
         OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
@@ -49,26 +43,24 @@ program data_misfit
         close(IOUT)
 
         ! check search status 
-        if (step_length>0.0) then 
+        if (step_length>0.0) then ! ongoing line search
             call check_linesearch(output_dir,iter) 
 
-        else
-            if(iter==1)  then
-                !!! misfit hist for iteration 
-                write(filename,'(a)') trim(output_dir)//'/misfit/data_misfit_hist.dat'
-                OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
-                write(IOUT,'(I5,e15.8)') iter-1,misfit_cur
-                close(IOUT)
-            endif
+        else ! starting line search
+            !!! misfit hist for iteration 
+            write(filename,'(a)') trim(output_dir)//'/misfit/data_misfit_hist.dat'
+            OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
+            write(IOUT,'(I5,e15.8)') iter-1,misfit_cur
+            close(IOUT)
             ! search status initilization
             is_cont=1
             is_done=0
             is_brak=0
             next_step_length=initial_step_length
             optimal_step_length=0.0    
-            call check_iteration(output_dir)
+            !call check_iteration(output_dir)
 
-        endif ! compute_adjoint
+        endif ! status of line search
 
         !! SAVE search status
         write(filename,'(a)') trim(output_dir)//'/misfit/search_status.dat'
@@ -79,8 +71,13 @@ program data_misfit
         write(IOUT,'(f15.5)') next_step_length
         write(IOUT,'(f15.5)') optimal_step_length
         close(IOUT)
-    endif ! iter>0
 
+    else ! misfit evaluations
+        write(filename, "(a)") trim(output_dir)//'/misfit/data_misfit'
+        OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
+        write(IOUT,'(e15.8)') misfit_cur
+        close(IOUT)
+    endif ! iter>0
 
 end program data_misfit
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -113,6 +110,9 @@ subroutine sum_misfit(directory,misfit_cur,NPROC_DATA)
     misfit_cur=misfit_cur+temp
     enddo !! ip
     enddo !! source loop
+
+    !! take average of nsrc
+    misfit_cur=misfit_cur/nsrc
 
 end subroutine sum_misfit
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -280,15 +280,15 @@ subroutine check_linesearch(directory,iter)
         endif
     endif
 
-    if(is_done==1) then
+   ! if(is_done==1) then
         !!! misfit hist for iteration 
-        write(filename,'(a)') trim(directory)//'/misfit/data_misfit_hist.dat'
-        OPEN (IOUT, FILE=filename,status='unknown',POSITION='APPEND')
-        write(IOUT,'(I5,e15.8)') iter,optimal_misfit
-        close(IOUT)
+        !write(filename,'(a)') trim(directory)//'/misfit/data_misfit_hist.dat'
+        !OPEN (IOUT, FILE=filename,status='unknown',POSITION='APPEND')
+        !write(IOUT,'(I5,e15.8)') iter,optimal_misfit
+        !close(IOUT)
 
         ! check iteration for next step
-        call check_iteration(directory)
-    endif
+        !call check_iteration(directory)
+   ! endif
 
 end subroutine check_linesearch

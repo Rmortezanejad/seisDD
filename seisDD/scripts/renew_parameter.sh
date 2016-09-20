@@ -119,6 +119,9 @@ if [ ! -z "$measurement_weight" ]; then
     sed -e "s#^INTEGER, PARAMETER :: mtype=.*#INTEGER, PARAMETER :: mtype=${#measurement_weight[*]}#g"  $FILE > temp;  mv temp $FILE
     sed -e "s#^REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=.*#REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=[${measurement_weight[*]}]#g"  $FILE > temp;  mv temp $FILE
 fi
+if [ ! -z "$uncertainty" ]; then 
+    sed -e "s#^LOGICAL :: uncertainty=.*#LOGICAL :: uncertainty=.$uncertainty.#g"  $FILE > temp;  mv temp $FILE
+fi
 
 # DD
 if [ ! -z "$cc_threshold" ]; then

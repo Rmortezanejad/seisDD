@@ -58,7 +58,7 @@ else
     exit
 fi
 echo 
-read -rsp $'Press any key to continue if workflow is selected correctly ...\n' -n1 key
+#read -rsp $'Press any key to continue if workflow is selected correctly ...\n' -n1 key
 
 echo
 echo " renew parameter file ..."
@@ -78,7 +78,7 @@ sed -e "s#^LIB_preprocess=.*#LIB_preprocess=./bin/seismo.a#g"  $FILE > temp;  mv
 make -f make_lib clean
 make -f make_lib
 echo 
-read -rsp $'Press any key to continue if lib is compiled successfully ...\n' -n1 key
+#read -rsp $'Press any key to continue if lib is compiled successfully ...\n' -n1 key
 
 cp $package_path/make/make_$compiler ./make_file
 FILE="make_file"
@@ -87,7 +87,7 @@ sed -e "s#^LIB_seismo=.*#LIB_seismo=./bin/seismo.a#g"  $FILE > temp;  mv temp $F
 make -f make_file clean
 make -f make_file
 echo 
-read -rsp $'Press any key to continue if source codes are compiled successfully ...\n' -n1 key
+#read -rsp $'Press any key to continue if source codes are compiled successfully ...\n' -n1 key
 
 echo 
 echo " edit request nodes and tasks ..."

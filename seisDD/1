@@ -115,67 +115,35 @@ program misfit_adjoint
         do itype=1, ntype 
         num_AD=0
         num_DD=0
+        misfit_AD=0.0_CUSTOM_REAL
         misfit_DD=0.0_CUSTOM_REAL
 
         ! absolute mwasurement  
-        if(index(misfit_type_list,'AD')>0) then
-            ! initialize
-            seism_adj_AD = 0.0_CUSTOM_REAL 
-            num_AD=0
-            mean_AD=0.0
-            var_AD=1.0
-
-            write(filename,'(a,i6.6,a)') &
-                trim(input_dir)//'/proc',myrank,'_misfit_'//trim(measurement_types(itype))//'_AD'
-            OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier) 
+        if(index(misfit_type_list,'AD')>0) then 
             call Absolute_diff(trim(measurement_types(itype)))
-            close(IOUT)
-            ! load misfit_AD
-            allocate(misfit_AD(num_AD))
-            OPEN (UNIT=IIN, FILE=filename,iostat=ier)
-            read(IIN,*) misfit_AD
-            close(IIN)
-            ! estimate mean and variance 
-            mean_AD=sum(misfit_AD)/num_AD
-            if(compute_adjoint) then
-                !! save estimated var_AD
-                if(uncertainty .and. num_AD>1) var_AD=sum((misfit_AD-mean_AD)**2)/(num_AD-1)
+
+            if(DISPLAY_DETAILS .and. compute_adjoint) then
                 write(filename,'(a,i6.6,a)') &
-                    trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_AD'
+                    trim(input_dir)//'/proc',myrank,'_misfit_'//trim(measurement_types(itype))//'_AD'
+                print*,trim(filename)
                 OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier)
-                write(IOUT,*) var_AD
+                do irec=1,nrec_proc
+                write(IOUT,*) irec,misfit_AD(irec)
+                enddo
                 close(IOUT)
-                seism_adj_AD=seism_adj_AD/var_AD/max(num_AD,1)
-                seism_adj = seism_adj + seism_adj_AD
-            else
-                write(filename,'(a,i6.6,a)') &
-                    trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_AD'
-                OPEN (IIN,FILE=trim(filename),status='unknown',iostat=ier)
-                read (IIN,*) var_AD
-                close(IIN) 
-            endif
-            ! add up misfit
-            misfit=misfit+ sum(misfit_AD**2)/var_AD/max(num_AD,1)
-            if(DISPLAY_DETAILS) then
                 print*
-                print*, trim(adjustl(data_names(icomp))),' comp'
-                print*, 'misfit_',trim(trim(measurement_types(itype))),'_AD'
-                print*, 'total number of measurements :', num_AD
-                print*, 'mean_AD=',mean_AD
-                print*, 'var_AD=',var_AD
-                print*, 'misfit without uncertainty :', sum(misfit_AD**2)/num_AD
-                print*, 'misfit with uncertainty :',sum(misfit_AD**2)/var_AD/num_AD
-                print*, 'min/max of adj : ',&
-                minval(seism_adj_AD(:,:)), maxval(seism_adj_AD(:,:))
+                print*,'misfit_AD=',misfit_AD
+                print*, 'summed squared misfit_',trim(trim(measurement_types(itype))),&
+                    '_AD=',sum(misfit_AD)  
+                print*, trim(adjustl(data_names(icomp))), &
+                    ': total number of AD measurements :', &
+                    num_AD, num_AD*100.0/nrec_proc,'%'
             endif
-            deallocate(misfit_AD)
         endif
 
         ! differential measurement
         if (nrec_proc>1 .and. index(misfit_type_list,'DD')>0) then
             call Relative_diff(input_dir,adjustl(data_names(icomp)))
-            misfit=misfit+misfit_DD/max(num_DD,1)
-            seism_adj = seism_adj + seism_adj_DD/max(num_DD,1)
 
             if(DISPLAY_DETAILS .and. compute_adjoint) then
                 print*
@@ -187,13 +155,16 @@ program misfit_adjoint
             endif
         endif
 
-        ! measurement weighting
+        ! misfit (AD+DD+...)
+        misfit=misfit+ sum(misfit_AD)/max(num_AD,1) + misfit_DD/max(num_DD,1)
         misfit=misfit*measurement_weight(itype)
+
+        ! adjoint
         if(compute_adjoint) then 
+            seism_adj = seism_adj_AD/max(num_AD,1) + seism_adj_DD/max(num_DD,1)
             seism_adj=seism_adj*measurement_weight(itype)
             call process_adj_all()
         endif
-
         enddo ! itype
 
         ! finalize
@@ -300,6 +271,7 @@ subroutine initialize(directory,data_name)
         allocate(seism_adj(NSTEP,nrec_proc))
         allocate(seism_adj_AD(NSTEP,nrec_proc))
         allocate(seism_adj_DD(NSTEP,nrec_proc))
+        allocate(misfit_AD(nrec_proc))
         allocate(noise(NSTEP,nrec_proc))
         allocate(st_xval(nrec_proc))
         allocate(st_yval(nrec_proc))
@@ -512,19 +484,22 @@ subroutine Absolute_diff(measurement_type)
     integer :: irec
     real(kind=CUSTOM_REAL) :: d(NSTEP),s(NSTEP),adj(NSTEP)
     real(kind=CUSTOM_REAL) :: wtr
-    integer :: ntstart,ntend,nlen,num
+    real(kind=CUSTOM_REAL) :: misfit_value
+    integer :: ntstart,ntend,nlen
 
     ! initialization
     d = 0.0_CUSTOM_REAL
     s = 0.0_CUSTOM_REAL
 
     do irec=1,nrec_proc
+
     ! get data 
     d(:)=seism_obs(:,irec)
     s(:)=seism_syn(:,irec)
 
     !! misfit and adjoint evaluation
     ! initialization
+    misfit_value=0.0
     adj(:)=0.d0
 
     ! window info
@@ -538,16 +513,40 @@ subroutine Absolute_diff(measurement_type)
         (ntend-ntstart)*deltat<window_len) &
         cycle
 
-    !!  evaluate misfit and adj 
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+    if(DISPLAY_DETAILS .and. compute_adjoint) then
+        print*
+        print*,'irec=',irec
+        print*,'window -- ',ntstart,ntend
+    endif
+
     call misfit_adj_AD(measurement_type,d,s,NSTEP,&
         deltat,f0,ntstart,ntend,&
         window_type,compute_adjoint, &
-        adj,num)
-    num_AD = num_AD + num 
+        misfit_value,adj) 
+
+    ! save misfit and adj weighted by measurement_weight
+    misfit_AD(irec)=misfit_value
+    !misfit_trace = misfit_trace + misfit_value**2*measurement_weight(itype)
+    if(DISPLAY_DETAILS .and. compute_adjoint) then
+        print*,'misfit_',trim(measurement_type),'_AD=',misfit_value
+        print*,'squared misfit_',trim(measurement_type),'_AD=',misfit_value**2
+        ! print*,'measurement_weight=',measurement_weight(itype)
+    endif
+
+    !if(compute_adjoint) adj_trace = adj_trace + adj*measurement_weight(itype)
+
     if(compute_adjoint) then 
         call process_adj_trace(adj,ntstart,ntend,dis_sr(irec))
+        if(DISPLAY_DETAILS) then
+            print*, 'Min/Max of adj :',minval(adj(:)),maxval(adj(:))
+        endif
+
         seism_adj_AD(:,irec) = seism_adj_AD(:,irec) + adj(:)
     endif
+
+    num_AD = num_AD +1
+
     enddo ! irec
 
 end subroutine Absolute_diff

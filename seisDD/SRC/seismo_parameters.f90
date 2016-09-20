@@ -63,6 +63,7 @@ LOGICAL :: TRACE_NORMALIZE=.false.
 !! measurement type weight 
 INTEGER, PARAMETER :: mtype=MAX_MISFIT_TYPE
 REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=1
+LOGICAL :: uncertainty=.false.
 
 !! DD par
 REAL(KIND=CUSTOM_REAL), PARAMETER :: cc_threshold=0.9
@@ -114,6 +115,9 @@ REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: seism_syn
 REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: seism_adj
 REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: seism_adj_AD
 REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: seism_adj_DD
+REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: misfit_AD
+REAL(KIND=CUSTOM_REAL) :: mean_AD, var_AD, std_AD
+
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: st_xval,st_yval,st_zval
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: dis_sr
 REAL(KIND=CUSTOM_REAL) :: x_source, y_source, z_source
@@ -149,7 +153,7 @@ INTEGER :: stf_len
 INTEGER :: num_AD, num_DD
 INTEGER, DIMENSION(:,:), ALLOCATABLE :: is_pair
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: misfit_proc
-REAL(KIND=CUSTOM_REAL) :: misfit_AD,misfit_DD, misfit
+REAL(KIND=CUSTOM_REAL) :: misfit_DD, misfit
 
 !! kernels
 INTEGER :: nspec
