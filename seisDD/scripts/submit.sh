@@ -58,8 +58,10 @@ else
     exit
 fi
 echo 
-#read -rsp $'Press any key to continue if workflow is selected correctly ...\n' -n1 key
-
+read -p "Is the correct workflow selected (y/n)?" yn
+if [ $yn == 'n' ]; then
+    exit
+fi
 echo
 echo " renew parameter file ..."
 cp $package_path/SRC/seismo_parameters.f90 ./bin/
@@ -68,49 +70,46 @@ cp $package_path/scripts/renew_parameter.sh ./
 ./renew_parameter.sh
 
 echo 
-echo " complile lib codes ... "
-rm -rf *.mod make_*
-cp $package_path/lib/make_lib ./make_lib
-FILE="make_lib"
-sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/lib/src#g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^MOD_DIR=.*#MOD_DIR=./bin#g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^LIB_preprocess=.*#LIB_preprocess=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
-make -f make_lib clean
-make -f make_lib
-echo 
-#read -rsp $'Press any key to continue if lib is compiled successfully ...\n' -n1 key
-
-cp $package_path/make/make_$compiler ./make_file
-FILE="make_file"
-sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/SRC#g"  $FILE > temp;  mv temp $FILE
-sed -e "s#^LIB_seismo=.*#LIB_seismo=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
-make -f make_file clean
-make -f make_file
-echo 
-#read -rsp $'Press any key to continue if source codes are compiled successfully ...\n' -n1 key
+read -p "Do you wish to comiple lib codes (y/n)?" yn
+if [ $yn == 'y' ]; then 
+    rm -rf *.mod make_*
+    cp $package_path/lib/make_lib ./make_lib
+    FILE="make_lib"
+    sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/lib/src#g"  $FILE > temp;  mv temp $FILE
+    sed -e "s#^MOD_DIR=.*#MOD_DIR=./bin#g"  $FILE > temp;  mv temp $FILE
+    sed -e "s#^LIB_preprocess=.*#LIB_preprocess=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
+    make -f make_lib clean
+    make -f make_lib
+fi
 
 echo 
-echo " edit request nodes and tasks ..."
+read -p "Do you wish to comiple source codes (y/n)?" yn
+if [ $yn == 'y' ]; then
+    cp $package_path/make/make_$compiler ./make_file
+    FILE="make_file"
+    sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/SRC#g"  $FILE > temp;  mv temp $FILE
+    sed -e "s#^LIB_seismo=.*#LIB_seismo=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
+    make -f make_file clean
+    make -f make_file
+fi 
+
 nproc=$NPROC_SPECFEM
 ntaskspernode=$(echo "$max_nproc_per_node $nproc" | awk '{ print $1/$2 }')
 nodes=$(echo $(echo "$ntasks $nproc $max_nproc_per_node" | awk '{ print $1*$2/$3 }') | awk '{printf("%d\n",$0+=$0<0?0:0.999)}')
-echo " Request $nodes nodes, $ntasks tasks, $ntaskspernode tasks per node, $nproc cpus per task "
-
 echo
+echo "Request $nodes nodes, $ntasks tasks, $ntaskspernode tasks per node, $nproc cpus per task "
 echo '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-echo
+read -p "ready to submit job (y/n)?" yn
+if [ $yn == 'y' ]; then
+    if [ $system == 'slurm' ]; then
+        echo "slurm system ..."
+        echo "sbatch -p $queue --nodes=$nodes --ntasks=$ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh"
+        sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh
 
-echo "submit job ..."
-echo
-if [ $system == 'slurm' ]; then
-    echo "slurm system ..."
-    echo "sbatch -p $queue --nodes=$nodes --ntasks=$ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh"
-    sbatch -p $queue -N $nodes -n $ntasks --cpus-per-task=$nproc -t $WallTime -e job_info/error -o job_info/output $Job_title.sh
-
-elif [ $system == 'pbs' ]; then
-    echo "pbs system ..."
-    echo
-    echo "qsub -q $queue select=$nodes:ncpus=$max_nproc_per_node:mpiprocs=$nproc -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh"
-    qsub -q $queue -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh
+    elif [ $system == 'pbs' ]; then
+        echo "pbs system ..."
+        echo "qsub -q $queue select=$nodes:ncpus=$max_nproc_per_node:mpiprocs=$nproc -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh"
+        qsub -q $queue -l nodes=$nodes:ppn=$max_nproc_per_node -l --walltime=$WallTime -e job_info/error -o job_info/output  $Job_title.sh
+    fi
 fi
 echo
