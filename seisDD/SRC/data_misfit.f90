@@ -280,15 +280,15 @@ subroutine check_linesearch(directory,iter)
         endif
     endif
 
-   ! if(is_done==1) then
-        !!! misfit hist for iteration 
-        !write(filename,'(a)') trim(directory)//'/misfit/data_misfit_hist.dat'
-        !OPEN (IOUT, FILE=filename,status='unknown',POSITION='APPEND')
-        !write(IOUT,'(I5,e15.8)') iter,optimal_misfit
-        !close(IOUT)
+    if(is_done==1) then
+        !! misfit hist for iteration 
+        write(filename,'(a)') trim(directory)//'/misfit/data_misfit_hist.dat'
+        OPEN (IOUT, FILE=filename,status='unknown',POSITION='APPEND')
+        write(IOUT,'(I5,e15.8)') iter,optimal_misfit
+        close(IOUT)
 
         ! check iteration for next step
-        !call check_iteration(directory)
-   ! endif
+        call check_iteration(directory)
+    endif
 
 end subroutine check_linesearch

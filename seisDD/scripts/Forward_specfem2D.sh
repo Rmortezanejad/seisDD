@@ -34,7 +34,7 @@ cp -r $SUBMIT_DIR/parameter ./
 cp -r $SUBMIT_DIR/bin ./
 cp -r $SUBMIT_DIR/DATA ./
 # if $SUBMIT_DIR/SU_process exist
-if [ -d "$SUBMIT_DIR/SU_process" ]; then
+if [ -d "$SUBMIT_DIR/SU_process" ] && $SU_process; then
     cp -r $SUBMIT_DIR/SU_process ./
 fi
 # if velocity_dir exist

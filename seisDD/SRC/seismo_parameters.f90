@@ -126,6 +126,11 @@ INTEGER(KIND=2) :: header2(2)
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: time
 REAL(KIND=CUSTOM_REAL) :: ratio_data_syn=0.01
 
+!! model
+INTEGER,PARAMETER :: MAX_PAR_NUM=3
+!specfem intrinsic input model parameters in modeling
+CHARACTER (LEN=50), DIMENSION(MAX_PAR_NUM) :: model_list=['rho','vp','vs']
+
 !! measurement
 CHARACTER (LEN=MAX_STRING_LEN) :: measurement_list
 CHARACTER (LEN=MAX_STRING_LEN) :: misfit_type_list

@@ -22,7 +22,7 @@ DATA_DIR=$( seq --format="$DATA_DIR/%06.f/" $(($isource-1)) $(($isource-1)) )
 cp -r $SUBMIT_DIR/parameter ./
 cp -r $DATA_DIR/* $ISRC_DATA_DIR/ 
 # if $SUBMIT_DIR/SU_process exist
-if [ -d "$SUBMIT_DIR/SU_process" ]; then
+if [ -d "$SUBMIT_DIR/SU_process" ] &&  $SU_process; then
     cp -r $SUBMIT_DIR/SU_process ./
 fi
 

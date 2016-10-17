@@ -79,6 +79,10 @@ mkdir -p $SUBMIT_RESULT/misfit
 step_length=0.0
 iter=1
 ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_data_misfit
+if [ -d "$SUBMIT_RESULT/m_target" ]; then
+    echo "model misfit ......"
+    ./bin/model_misfit.exe $NPROC_SPECFEM $iter $SUBMIT_RESULT/m_target $SUBMIT_RESULT/m_current $SUBMIT_RESULT 2> ./job_info/error_model_misfit
+fi
 
 file=$SUBMIT_RESULT/misfit/search_status.dat
 is_cont=$(awk -v "line=1" 'NR==line { print $1 }' $file)

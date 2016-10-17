@@ -53,6 +53,7 @@ do
     else
         sh $SCRIPTS_DIR/Forward_${solver}.sh $isource $NPROC_SPECFEM $data_tag $data_list \
             $velocity_dir $SAVE_FORWARD $WORKING_DIR $DATA_DIR $job 2>./job_info/error_Forward_simulation
+        cp -r $velocity_dir $SUBMIT_RESULT/m_target
     fi
  if [ $isource -eq 1 ] ; then
      ENDTIME=$(date +%s)
