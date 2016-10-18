@@ -43,23 +43,24 @@ program data_misfit
         close(IOUT)
 
         ! check search status 
-        if (step_length>0.0) then ! ongoing line search
-            call check_linesearch(output_dir,iter) 
-
-        else ! starting line search
-            !!! misfit hist for iteration 
-            write(filename,'(a)') trim(output_dir)//'/misfit/data_misfit_hist.dat'
-            OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
-            write(IOUT,'(I5,e15.8)') iter-1,misfit_cur
-            close(IOUT)
+        if(step_length==0.0) then ! starting line search
             ! search status initilization
             is_cont=1
             is_done=0
             is_brak=0
             next_step_length=initial_step_length
-            optimal_step_length=0.0    
-            !call check_iteration(output_dir)
-
+            optimal_step_length=0.0
+            if(iter==1) then ! starting iteration
+                !!! misfit hist for iteration 
+                write(filename,'(a)') trim(output_dir)//'/misfit/data_misfit_hist.dat'
+                OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
+                write(IOUT,'(I5,e15.8)') iter-1,misfit_cur
+                close(IOUT)
+            else ! check iteration
+                call check_iteration(output_dir)
+            endif
+        else ! line search 
+            call check_linesearch(output_dir,iter)
         endif ! status of line search
 
         !! SAVE search status

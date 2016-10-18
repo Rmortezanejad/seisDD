@@ -84,6 +84,8 @@ if [ -d "$SUBMIT_RESULT/m_target" ]; then
     ./bin/model_misfit.exe $NPROC_SPECFEM $iter $SUBMIT_RESULT/m_target $SUBMIT_RESULT/m_current $SUBMIT_RESULT 2> ./job_info/error_model_misfit
 fi
 
+# continue?
+echo
 file=$SUBMIT_RESULT/misfit/search_status.dat
 is_cont=$(awk -v "line=1" 'NR==line { print $1 }' $file)
 is_done=$(awk -v "line=2" 'NR==line { print $1 }' $file)

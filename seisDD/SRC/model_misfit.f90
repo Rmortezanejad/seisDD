@@ -51,11 +51,11 @@ program model_misfit
     read(IIN) nspec_proc(myrank+1)
     close(IIN)
 
-    if(DISPLAY_DETAILS .and. myrank==0) print*, 'nspec_proc=',nspec_proc(myrank+1)
+    !if(DISPLAY_DETAILS .and. myrank==0) print*, 'nspec_proc=',nspec_proc(myrank+1)
     enddo
 
     nspec=sum(nspec_proc)
-    if(DISPLAY_DETAILS) print*,'NGLLX*NGLLY*NGLLZ*NSPEC*nmod:',NGLLX,NGLLY,NGLLZ,NSPEC,nmod
+    !if(DISPLAY_DETAILS) print*,'NGLLX*NGLLY*NGLLZ*NSPEC*nmod:',NGLLX,NGLLY,NGLLZ,NSPEC,nmod
 
     !! local
     allocate(rho_target(NGLLX,NGLLY,NGLLZ,NSPEC))
@@ -83,8 +83,8 @@ program model_misfit
     write(filename,'(a,i6.6,a)') &
         trim(dir_target)//'/proc',myrank,&
         '_'//trim(model_list(ipar))//'.bin'
-    if(DISPLAY_DETAILS .and. myrank==0 .and. ipar==1) print*,'LOAD m_target ...'
-    if(DISPLAY_DETAILS .and. myrank==0) print*, trim(filename)
+   ! if(DISPLAY_DETAILS .and. myrank==0 .and. ipar==1) print*,'LOAD m_target ...'
+   ! if(DISPLAY_DETAILS .and. myrank==0) print*, trim(filename)
     open(IIN,file=trim(filename),status='old',action='read',form='unformatted',iostat=ier)
     if (ier /= 0) then
         print*, 'Error: could not open m_target file: ',trim(filename)
@@ -106,8 +106,8 @@ program model_misfit
     write(filename,'(a,i6.6,a)') &
         trim(dir_estimate)//'/proc',myrank,&
         '_'//trim(model_list(ipar))//'.bin'
-    if(DISPLAY_DETAILS .and. myrank==0 .and. ipar==1) print*,'LOAD m_estimate ...'
-    if(DISPLAY_DETAILS .and. myrank==0) print*, trim(filename)
+    !if(DISPLAY_DETAILS .and. myrank==0 .and. ipar==1) print*,'LOAD m_estimate ...'
+    !if(DISPLAY_DETAILS .and. myrank==0) print*, trim(filename)
     open(IIN,file=trim(filename),status='old',action='read',form='unformatted',iostat=ier)
     if (ier /= 0) then
         print*, 'Error: could not open m_estimate file: ',trim(filename)
@@ -141,13 +141,15 @@ program model_misfit
     !!! misfit evolution at iterations
     write(filename, "(a)") trim(directory)//'/misfit/model_misfit_hist.dat'
     OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
-    write(IOUT,'(i,4e15.8)') iter,rho_norm,alpha_norm,beta_norm,sum_norm
+    write(IOUT,'(i,3e15.8)') iter,rho_norm,alpha_norm,beta_norm
     close(IOUT)
 
-    print*, 'model misfit -- rho_norm=',rho_norm
-    print*, 'model misfit -- alpha_norm=',alpha_norm
-    print*, 'model misfit -- beta_norm=',beta_norm
-    print*, 'model misfit -- sum_norm=',sum_norm
+    if(DISPLAY_DETAILS) then
+        print*, 'model misfit -- rho_norm=',rho_norm
+        print*, 'model misfit -- alpha_norm=',alpha_norm
+        print*, 'model misfit -- beta_norm=',beta_norm
+        print*, 'model misfit -- sum_norm=',sum_norm
+    endif
 
     deallocate(rho_target)
     deallocate(alpha_target)
