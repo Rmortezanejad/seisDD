@@ -7,7 +7,12 @@ source parameter
 currentdir=`pwd`
 EXE_DIR="$currentdir/bin"        # exacutable files directory
 
-############################# parameter files ############################################################### 
+############################# modify constants.f90 ##########################################################
+FILE="$EXE_DIR/constants.f90"
+if [ ! -z "$wtr_env" ]; then
+    sed -e "s#^real(kind=CUSTOM_REAL), parameter :: wtr_env=.*#real(kind=CUSTOM_REAL), parameter :: wtr_env=$wtr_env #g"  $FILE > temp;  mv temp $FILE
+fi
+############################# modify seismo_parameters.f90 ################################################## 
 FILE="$EXE_DIR/seismo_parameters.f90"
 sed -e "s#^Job_title=.*#Job_title=$Job_title #g"  $FILE > temp;  mv temp $FILE
 
@@ -47,6 +52,9 @@ if [ ! -z "$NSRC" ]; then
 fi
 if [ ! -z "$seismotype" ]; then
     sed -e "s#^CHARACTER (LEN=20) :: seismotype=.*#CHARACTER (LEN=20) :: seismotype='$seismotype'#g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "${noise_level}" ]; then
+    sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: noise_level=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: noise_level=${noise_level} #g"  $FILE > temp;  mv temp $FILE
 fi
 
 ## PRE-PROCESSING
@@ -110,6 +118,9 @@ fi
 if [ ! -z "$measurement_weight" ]; then
     sed -e "s#^INTEGER, PARAMETER :: mtype=.*#INTEGER, PARAMETER :: mtype=${#measurement_weight[*]}#g"  $FILE > temp;  mv temp $FILE
     sed -e "s#^REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=.*#REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=[${measurement_weight[*]}]#g"  $FILE > temp;  mv temp $FILE
+fi
+if [ ! -z "$uncertainty" ]; then 
+    sed -e "s#^LOGICAL :: uncertainty=.*#LOGICAL :: uncertainty=.$uncertainty.#g"  $FILE > temp;  mv temp $FILE
 fi
 
 # DD
@@ -181,6 +192,7 @@ if [ ! -z "$station_radius" ]; then
 fi
 if [ ! -z "$precond" ]; then
     sed -e "s#^LOGICAL :: precond=.*#LOGICAL :: precond=.$precond.#g"  $FILE > temp;  mv temp $FILE
+    sed -e "s#^CHARACTER (LEN=MAX_STRING_LEN) :: precond_name=.*#CHARACTER (LEN=MAX_STRING_LEN) :: precond_name='$precond_name'#g"  $FILE > temp;  mv temp $FILE
 fi
 if [ ! -z "$wtr_precond" ]; then
     sed -e "s#^REAL(KIND=CUSTOM_REAL), PARAMETER :: wtr_precond=.*#REAL(KIND=CUSTOM_REAL), PARAMETER :: wtr_precond=$wtr_precond #g" $FILE > temp;  mv temp $FILE

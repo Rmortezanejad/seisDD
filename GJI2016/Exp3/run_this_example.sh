@@ -1,19 +1,39 @@
 #!/bin/bash
 
 source parameter
+currentdir=`pwd`
 
-echo "Run this example ..."
+echo "Configure and compile specfem2D ..."
+cd $specfem_path
+make clean
+if [ $NPROC_SPECFEM == 1 ]; then
+    ./configure FC=$compiler 
+else
+    ./configure FC=$compiler --with-mpi
+fi
+make all
 
-rm -rf submit_job
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+read -rsp $'Press any key to run this example ...\n' -n1 key
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
-mkdir submit_job
-
-cp -r $package_path/scripts/submit.sh submit_job/
-cp -r DATA submit_job/
-cp -r parameter submit_job/
-if [ -d "SU_process" ]; then
-    cp -r SU_process submit_job/
+cd $currentdir
+if [ -z "$submit_dir" ]; then
+    export submit_dir="./submit_job"
 fi
 
-echo 'cd submit_job/'
+rm -rf $submit_dir
+mkdir $submit_dir
+
+cp -r $specfem_path/bin $submit_dir/
+cp -r $package_path/scripts/submit.sh $submit_dir/
+cp -r DATA $submit_dir/
+cp -r parameter $submit_dir/
+if [ -d "SU_process" ]; then
+    cp -r SU_process $submit_dir/
+fi
+
+echo "ready to submit job in the directory: $submit_dir ..."
+echo "cd $submit_dir"
 echo './submit.sh'
+

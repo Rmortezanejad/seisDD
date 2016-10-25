@@ -32,6 +32,7 @@ REAL(KIND=CUSTOM_REAL), PARAMETER :: f0=0.084
 INTEGER, PARAMETER :: NREC=2
 INTEGER, PARAMETER :: NSRC=1
 CHARACTER (LEN=20) :: seismotype='displacement'
+REAL(KIND=CUSTOM_REAL), PARAMETER :: noise_level=0.0
 
 !! PRE-PROCESSING
 ! wavelet
@@ -62,6 +63,7 @@ LOGICAL :: TRACE_NORMALIZE=.false.
 !! measurement type weight 
 INTEGER, PARAMETER :: mtype=MAX_MISFIT_TYPE
 REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=1
+LOGICAL :: uncertainty=.false.
 
 !! DD par
 REAL(KIND=CUSTOM_REAL), PARAMETER :: cc_threshold=0.9
@@ -91,6 +93,7 @@ LOGICAL :: MASK_STATION=.false.
 REAL(KIND=CUSTOM_REAL), PARAMETER :: source_radius=0.0
 REAL(KIND=CUSTOM_REAL), PARAMETER :: station_radius=0.0
 LOGICAL :: precond=.false.
+CHARACTER (LEN=MAX_STRING_LEN) :: precond_name=''
 REAL(KIND=CUSTOM_REAL), PARAMETER :: wtr_precond=0.1
 
 !! DISPLAY 
@@ -112,6 +115,7 @@ REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: seism_syn
 REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: seism_adj
 REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: seism_adj_AD
 REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: seism_adj_DD
+
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: st_xval,st_yval,st_zval
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: dis_sr
 REAL(KIND=CUSTOM_REAL) :: x_source, y_source, z_source
@@ -120,9 +124,14 @@ INTEGER(KIND=2) :: header2(2)
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: time
 REAL(KIND=CUSTOM_REAL) :: ratio_data_syn=0.01
 
+!! model
+INTEGER,PARAMETER :: MAX_PAR_NUM=3
+!specfem intrinsic input model parameters in modeling
+CHARACTER (LEN=50), DIMENSION(MAX_PAR_NUM) :: model_list=['rho','vp','vs']
+
 !! measurement
-CHARACTER(LEN=MAX_STRING_LEN) :: measurement_list
-CHARACTER(LEN=MAX_STRING_LEN) :: misfit_type_list
+CHARACTER (LEN=MAX_STRING_LEN) :: measurement_list
+CHARACTER (LEN=MAX_STRING_LEN) :: misfit_type_list
 
 !! window 
 INTEGER,DIMENSION(:), ALLOCATABLE  :: win_start, win_end
@@ -144,10 +153,13 @@ REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: stf
 INTEGER :: stf_len
 
 !! misfit
+REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: misfit_AD,misfit_DD
+REAL(KIND=CUSTOM_REAL) :: mean_AD, var_AD, std_AD
+REAL(KIND=CUSTOM_REAL) :: mean_DD, var_DD, std_DD
 INTEGER :: num_AD, num_DD
 INTEGER, DIMENSION(:,:), ALLOCATABLE :: is_pair
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: misfit_proc
-REAL(KIND=CUSTOM_REAL) :: misfit_AD,misfit_DD, misfit
+REAL(KIND=CUSTOM_REAL) :: misfit
 
 !! kernels
 INTEGER :: nspec

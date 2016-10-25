@@ -61,7 +61,7 @@ velocity_dir=$target_velocity_dir
 if [ $system == 'slurm' ]; then
     srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
 elif [ $system == 'pbs' ]; then 
-    pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
+    pbsdsh -v $SCRIPTS_DIR/prepare_data.sh $velocity_dir
 fi
 
 if [ -d "$SUBMIT_RESULT/m_$(($iter_start-1))" ]; then
@@ -85,27 +85,36 @@ do
     if [ $system == 'slurm' ]; then
         srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_current_$iter
     elif [ $system == 'pbs' ]; then
-        pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_current_$iter
+        pbsdsh -v $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 
     fi
 
+    # misfit
     echo
-    echo "data misfit ...... "
+    echo "data misfit and initialize ...... "
     mkdir -p $SUBMIT_RESULT/misfit
     step_length=0.0
     ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_data_misfit_$iter
+    if [ -d "$SUBMIT_RESULT/m_target" -a $iter -eq 1 ]; then
+        echo "model misfit ......"
+        ./bin/model_misfit.exe $NPROC_SPECFEM $(($iter-1)) $SUBMIT_RESULT/m_target $SUBMIT_RESULT/m_current $SUBMIT_RESULT 2> ./job_info/error_model_misfit
+    fi
 
+    # iterate?
+    echo
     file=$SUBMIT_RESULT/misfit/search_status.dat
     is_cont=$(awk -v "line=1" 'NR==line { print $1 }' $file)
     is_done=$(awk -v "line=2" 'NR==line { print $1 }' $file)
     is_brak=$(awk -v "line=3" 'NR==line { print $1 }' $file)
     step_length=$(awk -v "line=4" 'NR==line { print $1 }' $file)
     optimal_step_length=$(awk -v "line=5" 'NR==line { print $1 }' $file)
-    echo "is_cont=$is_cont; is_done=$is_done; is_brak=$is_brak"
     if [ $is_brak -eq 1 ]; then
-        echo "stop due to close zero data misfit!"
+        echo "stop due to small data misfit!"
         break
+    else
+        echo "continue to iterate ..."
     fi
 
+    # kernel
     echo 
     echo "misfit kernel ...... "
     mkdir -p $SUBMIT_RESULT/misfit_kernel
@@ -121,18 +130,19 @@ do
         mkdir OUTPUT_FILES/DATABASES_MPI
         cp $SUBMIT_RESULT/misfit_kernel/proc*external_mesh.bin OUTPUT_FILES/DATABASES_MPI/
     fi
-    mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_list $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_misfit_kernel_$iter
+    mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_name $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_misfit_kernel_$iter
 
     if $smooth ; then
         echo 
         echo "smooth misfit kernel ... "
-        mpirun -np $NPROC_SPECFEM ./bin/xsmooth_sem $smooth_x $smooth_z $z_precond $kernel_list,$precond_list  $SUBMIT_RESULT/misfit_kernel/ $SUBMIT_RESULT/misfit_kernel/ $GPU_MODE 2> ./job_info/error_smooth_kernel_$iter
+        mpirun -np $NPROC_SPECFEM ./bin/xsmooth_sem $smooth_x $smooth_z $z_precond $kernel_list,$precond_name  $SUBMIT_RESULT/misfit_kernel/ $SUBMIT_RESULT/misfit_kernel/ $GPU_MODE 2> ./job_info/error_smooth_kernel_$iter
     fi
 
+    # optimization
     echo 
     echo "optimization --> gradient/direction ... "
     mkdir -p $SUBMIT_RESULT/optimizer
-    ./bin/optimization.exe $NPROC_SPECFEM $SUBMIT_RESULT $kernel_list $precond_list  $model_list $iter 2> ./job_info/error_optimizer_$iter
+    ./bin/optimization.exe $NPROC_SPECFEM $SUBMIT_RESULT $kernel_list $model_list $iter 2> ./job_info/error_optimizer_$iter
 
     echo
     echo 'line search along the update direction ......'
@@ -159,7 +169,7 @@ do
         if [ $system == 'slurm' ]; then
             srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_update_$iter
         elif [ $system == 'pbs' ]; then
-            pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_update_$iter
+            pbsdsh -v $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint
         fi
 
         echo
@@ -181,6 +191,11 @@ do
             ./bin/model_update.exe $NPROC_SPECFEM $SUBMIT_RESULT $model_list $optimal_step_length 2> ./job_info/error_update_model
             cp $SUBMIT_RESULT/m_try/proc* $SUBMIT_RESULT/m_current/
             cp -r  $SUBMIT_RESULT/m_current   $SUBMIT_RESULT/m_$iter
+            if [ -d "$SUBMIT_RESULT/m_target" ]; then
+                echo "model misfit ......"
+                ./bin/model_misfit.exe $NPROC_SPECFEM $iter $SUBMIT_RESULT/m_target $SUBMIT_RESULT/m_current $SUBMIT_RESULT 2> ./job_info/error_model_misfit
+            fi
+
             break 
         fi
 
@@ -208,7 +223,7 @@ do
 done  # end of iterative updates
 
 echo
-echo "******************finish all iterations for ${misfit_type_list} $job *************"
+echo "******************finish all ${iter_end} iterations for ${misfit_type_list} $job *************"
 
 cp -r $SUBMIT_DIR/parameter $SUBMIT_RESULT/
 cp -r $SUBMIT_DIR/job_info/output $SUBMIT_RESULT/

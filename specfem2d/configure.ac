@@ -19,19 +19,9 @@ AC_CONFIG_MACRO_DIR([m4])
 ############################################################
 
 AS_BOX([setting up compilation flags])
+AC_CANONICAL_HOST
 
 # 'configure' options
-
-###
-### MPI
-###
-
-AC_ARG_WITH([mpi],
-    [AC_HELP_STRING([--with-mpi],
-        [build parallel version @<:@default=yes@:>@])],
-    [want_mpi="$withval"],
-    [want_mpi=no])
-AM_CONDITIONAL([COND_MPI], [test "$want_mpi" = yes])
 
 ###
 ### precision
@@ -66,6 +56,39 @@ export COND_DEBUG_FALSE
 export COND_DEBUG_TRUE
 
 ###
+### FORCE_VECTORIZATION
+###
+
+AC_ARG_ENABLE([vectorization],
+    [AC_HELP_STRING([--enable-vectorization],
+        [build FORCE_VECTORIZATION enabled version @<:@default=auto@:>@])],
+    [want_vec="$enableval"],
+    [want_vec=no])
+if test x"$want_vec" == xauto; then
+    if test x"$want_debug" != xno; then
+        want_vec=no
+    else
+        want_vec=yes
+    fi
+else
+    if test x"$want_vec" != xno && test x"$want_debug" != xno; then
+        AC_MSG_ERROR([--enable-debug and --enable-vectorization cannot be specified simultaneously.])
+    fi
+fi
+AM_CONDITIONAL([COND_VECTORIZATION], [test x"$want_vec" != xno])
+
+###
+### MPI
+###
+
+AC_ARG_WITH([mpi],
+    [AC_HELP_STRING([--with-mpi],
+        [build parallel version @<:@default=no@:>@])],
+    [want_mpi="$withval"],
+    [want_mpi=no])
+AM_CONDITIONAL([COND_MPI], [test "$want_mpi" = yes])
+
+###
 ### CUDA
 ###
 
@@ -77,8 +100,9 @@ AC_ARG_WITH([cuda],
 AM_CONDITIONAL([COND_CUDA], [test "$want_cuda" != no])
 AM_CONDITIONAL([COND_CUDA5], [test "$want_cuda" = cuda5])
 AM_CONDITIONAL([COND_CUDA6], [test "$want_cuda" = cuda6])
+AM_CONDITIONAL([COND_CUDA7], [test "$want_cuda" = cuda7])
 # cuda linking for cuda 5x and 6x
-AM_CONDITIONAL([COND_CUDA_PLUS], [test "$want_cuda" = cuda5 -o "$want_cuda" = cuda6])
+AM_CONDITIONAL([COND_CUDA_PLUS], [test "$want_cuda" = cuda5 -o "$want_cuda" = cuda6 -o "$want_cuda" = cuda7])
 
 ############################################################
 
@@ -202,6 +226,7 @@ fi
 AC_MSG_CHECKING([whether Scotch is usable])
 if test "x${scotch_usable}" = "xyes"; then
  AC_DEFINE([HAVE_SCOTCH],[1],[defined if Scotch is installed])
+ want_scotch=yes
  USE_BUNDLED_SCOTCH=0
  SCOTCH_DIR="${ac_scotch_dir}"
  SCOTCH_LIBDIR="${ac_scotch_lib_dir}"
@@ -220,27 +245,31 @@ else
  fi
  ACX_PTHREAD(AC_MSG_RESULT([pthread found]), AC_MSG_ERROR([pthread not found]))
 
-
  # scotch only needed with mpi support
  if test "$want_mpi" = yes; then
+  want_scotch=yes
+  #daniel: scotch bundle
+  # uses bundled scotch: current version pointed to by symbolic link scotch/
+  USE_BUNDLED_SCOTCH=1
 
- #daniel: scotch bundle
- # uses bundled scotch: current version pointed to by symbolic link scotch/
- USE_BUNDLED_SCOTCH=1
-
- SCOTCH_DIR="$srcdir/src/meshfem2D/scotch"
- SCOTCH_LIBDIR="${SCOTCH_DIR}/lib"
- SCOTCH_INCLUDEDIR="${SCOTCH_DIR}/include"
-
+  SCOTCH_DIR="$srcdir/src/meshfem2D/scotch"
+  SCOTCH_LIBDIR="${SCOTCH_DIR}/lib"
+  SCOTCH_INCLUDEDIR="${SCOTCH_DIR}/include"
  else
-
- # no mpi support, scotch not needed
- USE_BUNDLED_SCOTCH=0
-
+  # no mpi support, scotch not needed
+  want_scotch=no
+  USE_BUNDLED_SCOTCH=0
  fi # want_mpi
 
 fi
 LDFLAGS=${ac_save_ldflags}
+
+AM_CONDITIONAL([COND_SCOTCH], [test "$want_scotch" = yes])
+AS_IF([test "$want_scotch" = yes],[
+  AC_MSG_RESULT([SCOTCH is enabled])
+],[
+  AC_MSG_RESULT([SCOTCH is not enabled])
+])
 
 
 ############################################################
@@ -311,6 +340,17 @@ AS_IF([test x"$want_cuda" != xno], [
     CIT_CUDA_CONFIG
 ])
 
+###
+### FORCE_VECTORIZATION
+###
+
+AS_IF([test x"$want_vec" != xno],[
+  AS_BOX([FORCE VECTORIZATION])
+  AC_MSG_NOTICE([FORCE_VECTORIZATION is enabled])
+
+  FLAGS_CHECK="${FLAGS_CHECK} ${FC_DEFINE}FORCE_VECTORIZATION"
+  CPPFLAGS="${CPPFLAGS} -DFORCE_VECTORIZATION"
+])
 
 ############################################################
 
@@ -318,9 +358,11 @@ AS_BOX([setting up default simulation setup])
 
 # Output results.
 AC_CONFIG_FILES([
-	Makefile
-	setup/constants.h
-	setup/precision.h
+  Makefile
+  setup/constants.h
+  setup/constants_tomography.h
+  setup/precision.h
+  setup/config.fh
 ])
 
 if test "$USE_BUNDLED_SCOTCH" = 1; then
@@ -331,6 +373,7 @@ fi
 
 AC_CONFIG_COMMANDS([bin], [AS_MKDIR_P(bin)])
 AC_CONFIG_COMMANDS([obj], [AS_MKDIR_P(obj)])
+AC_CONFIG_COMMANDS([DATA], [AS_MKDIR_P(DATA)])
 AC_CONFIG_COMMANDS([OUTPUT_FILES], [AS_MKDIR_P(OUTPUT_FILES)])
 
 AC_OUTPUT

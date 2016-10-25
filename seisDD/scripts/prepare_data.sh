@@ -12,6 +12,7 @@ if [ $system == 'slurm' ]; then
 elif [ $system == 'pbs' ]; then
     iproc=$PBS_VNODENUM
 fi
+#iproc=${OMPI_COMM_WORLD_RANK}
 
 # allocate tasks over all sources
 # ntasks in parallel and nsrc in total
@@ -52,6 +53,7 @@ do
     else
         sh $SCRIPTS_DIR/Forward_${solver}.sh $isource $NPROC_SPECFEM $data_tag $data_list \
             $velocity_dir $SAVE_FORWARD $WORKING_DIR $DATA_DIR $job 2>./job_info/error_Forward_simulation
+        cp -r $velocity_dir $SUBMIT_RESULT/m_target
     fi
  if [ $isource -eq 1 ] ; then
      ENDTIME=$(date +%s)
@@ -59,3 +61,4 @@ do
      echo "Data preparation took $Ttaken seconds"
  fi
 done
+

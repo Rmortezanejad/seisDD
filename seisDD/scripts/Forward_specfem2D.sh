@@ -34,7 +34,7 @@ cp -r $SUBMIT_DIR/parameter ./
 cp -r $SUBMIT_DIR/bin ./
 cp -r $SUBMIT_DIR/DATA ./
 # if $SUBMIT_DIR/SU_process exist
-if [ -d "$SUBMIT_DIR/SU_process" ]; then
+if [ -d "$SUBMIT_DIR/SU_process" ] && $SU_process; then
     cp -r $SUBMIT_DIR/SU_process ./
 fi
 # if velocity_dir exist
@@ -62,10 +62,17 @@ sed -e "s#^SAVE_FORWARD.*#SAVE_FORWARD = .$SAVE_FORWARD. #g"  $FILE > temp; mv t
 ##### forward simulation (data) #####
 ./bin/xmeshfem2D > OUTPUT_FILES/output_mesher.txt
 
-if [ $isource -eq 1 ] ; then
-    echo "mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D"
+if [ "$NPROC_SPECFEM" -eq 1 ]; then
+    if [ $isource -eq 1 ] ; then
+        echo "./bin/xspecfem2D"
+    fi
+    ./bin/xspecfem2D > OUTPUT_FILES/output_forward.txt
+else
+    if [ $isource -eq 1 ] ; then
+        echo "mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D"
+    fi
+    mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D > OUTPUT_FILES/output_forward.txt
 fi
-mpirun -np $NPROC_SPECFEM ./bin/xspecfem2D > OUTPUT_FILES/output_forward.txt
 
 ## copy and preprocessing of data 
 arr=$(echo $data_list | tr "," "\n")

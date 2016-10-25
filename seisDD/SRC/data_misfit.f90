@@ -35,44 +35,51 @@ program data_misfit
     ! sum event_misfit
     call sum_misfit(input_dir,misfit_cur,NPROC_DATA)
 
-    !!! add current result to search history
-    write(filename, "(a)") trim(output_dir)//'/misfit/data_misfit_hist_detail'
-    OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
-    write(IOUT,'(i,f15.5,e15.8)') iter,step_length,misfit_cur
-    close(IOUT)
+    if(iter>0) then ! doing inversion/kernel
+        !!! add current result to search history
+        write(filename, "(a)") trim(output_dir)//'/misfit/data_misfit_hist_detail'
+        OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
+        write(IOUT,'(i,f15.5,e15.8)') iter,step_length,misfit_cur
+        close(IOUT)
 
+        ! check search status 
+        if(step_length==0.0) then ! starting line search
+            ! search status initilization
+            is_cont=1
+            is_done=0
+            is_brak=0
+            next_step_length=initial_step_length
+            optimal_step_length=0.0
+            if(iter==1) then ! starting iteration
+                !!! misfit hist for iteration 
+                write(filename,'(a)') trim(output_dir)//'/misfit/data_misfit_hist.dat'
+                OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
+                write(IOUT,'(I5,e15.8)') iter-1,misfit_cur
+                close(IOUT)
+                print*,'misfit_hist for niter',iter, ':',misfit_cur
+            else ! check iteration
+                call check_iteration(output_dir)
+            endif
+        else ! line search 
+            call check_linesearch(output_dir,iter)
+        endif ! status of line search
 
-    ! check search status 
-    if (.not.compute_adjoint) then 
-        call check_linesearch(output_dir,iter) 
+        !! SAVE search status
+        write(filename,'(a)') trim(output_dir)//'/misfit/search_status.dat'
+        OPEN (IOUT, FILE=trim(filename))
+        write(IOUT,'(I5)') is_cont
+        write(IOUT,'(I5)') is_done
+        write(IOUT,'(I5)') is_brak
+        write(IOUT,'(f15.5)') next_step_length
+        write(IOUT,'(f15.5)') optimal_step_length
+        close(IOUT)
 
-    else
-        if(iter==1)  then
-            !!! misfit hist for iteration 
-            write(filename,'(a)') trim(output_dir)//'/misfit/data_misfit_hist.dat'
-            OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
-            write(IOUT,'(I5,e15.8)') iter-1,misfit_cur
-            close(IOUT)
-        endif
-        ! search status initilization
-        is_cont=1
-        is_done=0
-        is_brak=0
-        next_step_length=initial_step_length
-        optimal_step_length=0.0    
-        call check_iteration(output_dir)
-
-    endif ! compute_adjoint
-
-    !! SAVE search status
-    write(filename,'(a)') trim(output_dir)//'/misfit/search_status.dat'
-    OPEN (IOUT, FILE=trim(filename))
-    write(IOUT,'(I5)') is_cont
-    write(IOUT,'(I5)') is_done
-    write(IOUT,'(I5)') is_brak
-    write(IOUT,'(f15.5)') next_step_length
-    write(IOUT,'(f15.5)') optimal_step_length
-    close(IOUT)
+    else ! misfit evaluations
+        write(filename, "(a)") trim(output_dir)//'/misfit/data_misfit'
+        OPEN (IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
+        write(IOUT,'(e15.8)') misfit_cur
+        close(IOUT)
+    endif ! iter>0
 
 end program data_misfit
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -106,6 +113,9 @@ subroutine sum_misfit(directory,misfit_cur,NPROC_DATA)
     enddo !! ip
     enddo !! source loop
 
+    !! take average of nsrc
+    misfit_cur=misfit_cur/nsrc
+
 end subroutine sum_misfit
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine check_iteration(directory)
@@ -131,7 +141,7 @@ subroutine check_iteration(directory)
     enddo
     close(IIN)
     niter = j
-    print*,'misfit_hist for niter ',niter, ' :',misfit_hist(1:niter)
+    print*,'misfit_hist for niter',niter, ':',misfit_hist(1:niter)
 
     ! absolute misfit small enough
     if(misfit_hist(niter)<=SMALL_VAL) then
@@ -273,7 +283,7 @@ subroutine check_linesearch(directory,iter)
     endif
 
     if(is_done==1) then
-        !!! misfit hist for iteration 
+        !! misfit hist for iteration 
         write(filename,'(a)') trim(directory)//'/misfit/data_misfit_hist.dat'
         OPEN (IOUT, FILE=filename,status='unknown',POSITION='APPEND')
         write(IOUT,'(I5,e15.8)') iter,optimal_misfit

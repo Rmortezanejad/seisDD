@@ -19,6 +19,9 @@ program misfit_adjoint
     character(len=MAX_STRING_LEN) :: input_dir
     character(len=MAX_FILENAME_LEN) :: filename
     real t1,t2
+    character(len=MAX_STRING_LEN) :: measurement_types(MAX_MISFIT_TYPE)
+    integer :: itype,ntype
+    character, parameter :: delimiter='+'
 
 #ifdef USE_MPI
     call MPI_INIT(ier)
@@ -98,47 +101,137 @@ program misfit_adjoint
         endif
 
         ! step 3 -- misfit-adjoint
+        call split_string(measurement_list,delimiter,measurement_types,ntype)
+        if(ntype>mtype) then
+            print*,'number of measurement_types exceeds number of measurement_weight: ',&
+                ntype, mtype
+            stop
+        endif
+        if (ntype<1) then 
+            print*, 'measurement type should be at least 1'
+            stop
+        endif
+
+        do itype=1, ntype 
         num_AD=0
         num_DD=0
-        misfit_AD=0.0_CUSTOM_REAL
-        misfit_DD=0.0_CUSTOM_REAL
 
         ! absolute mwasurement  
-        if(index(misfit_type_list,'AD')>0) then 
-            call Absolute_diff()
+        if(index(misfit_type_list,'AD')>0) then
+            ! initialize
+            seism_adj_AD = 0.0_CUSTOM_REAL 
+            num_AD=0
+            mean_AD=0.0
+            var_AD=1.0
 
-            if(DISPLAY_DETAILS .and. compute_adjoint) then
-                print*
-                print*, 'summed squared misfit_',trim(measurement_list),&
-                    '_AD=',misfit_AD  
-                print*, trim(adjustl(data_names(icomp))), &
-                    ': total number of AD measurements :', &
-                    num_AD, num_AD*100.0/nrec_proc,'%'
+            write(filename,'(a,i6.6,a)') &
+                trim(input_dir)//'/proc',myrank,'_misfit_'//trim(measurement_types(itype))//'_AD'
+            OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier) 
+            call Absolute_diff(trim(measurement_types(itype)))
+            close(IOUT)
+            ! load misfit_AD
+            allocate(misfit_AD(num_AD))
+            OPEN (UNIT=IIN, FILE=filename,iostat=ier)
+            read(IIN,*) misfit_AD
+            close(IIN)
+            ! estimate mean and variance 
+            mean_AD=sum(misfit_AD)/num_AD
+            if(compute_adjoint) then
+                !! save estimated var_AD
+                if(uncertainty .and. num_AD>1) var_AD=sum((misfit_AD-mean_AD)**2)/(num_AD-1)
+                write(filename,'(a,i6.6,a)') &
+                    trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_AD'
+                OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier)
+                write(IOUT,*) var_AD
+                close(IOUT)
+                seism_adj_AD=seism_adj_AD/var_AD/max(num_AD,1)
+                seism_adj = seism_adj + seism_adj_AD
+            else
+                write(filename,'(a,i6.6,a)') &
+                    trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_AD'
+                OPEN (IIN,FILE=trim(filename),status='unknown',iostat=ier)
+                read (IIN,*) var_AD
+                close(IIN) 
             endif
+            ! add up misfit
+            misfit=misfit+sum(misfit_AD**2)/var_AD/max(num_AD,1)
+            if(DISPLAY_DETAILS) then
+                print*
+                print*, trim(adjustl(data_names(icomp))),' comp'
+                print*, 'misfit_',trim(trim(measurement_types(itype))),'_AD'
+                print*, 'total number of measurements :', num_AD
+                print*, 'mean_AD=',mean_AD
+                print*, 'var_AD=',var_AD
+                print*, 'misfit without uncertainty :', sum(misfit_AD**2)/num_AD
+                print*, 'misfit with uncertainty :',sum(misfit_AD**2)/var_AD/num_AD
+                print*, 'min/max of adj : ',&
+                minval(seism_adj_AD(:,:)), maxval(seism_adj_AD(:,:))
+            endif
+            deallocate(misfit_AD)
         endif
 
         ! differential measurement
         if (nrec_proc>1 .and. index(misfit_type_list,'DD')>0) then
-            call Relative_diff(input_dir,adjustl(data_names(icomp)))
+          ! initialize
+            seism_adj_DD = 0.0_CUSTOM_REAL
+            num_DD=0
+            mean_DD=0.0
+            var_DD=1.0
 
-            if(DISPLAY_DETAILS .and. compute_adjoint) then
-                print*
-                print*, 'summed squared misfit_',trim(measurement_list),&
-                    '_DD=',misfit_DD
-                print*, trim(adjustl(data_names(icomp))), &
-                    ': total number of DD measurements :', &
-                    num_DD, num_DD*100.0/(nrec_proc*(nrec_proc-1)/2),'%'
+            write(filename,'(a,i6.6,a)') &
+                trim(input_dir)//'/proc',myrank,'_misfit_'//trim(measurement_types(itype))//'_DD'
+            OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier)
+            call Relative_diff(input_dir,adjustl(data_names(icomp)),trim(measurement_types(itype)))
+            close(IOUT)
+            ! load misfit_DD
+            allocate(misfit_DD(num_DD))
+            OPEN (UNIT=IIN, FILE=filename,iostat=ier)
+            read(IIN,*) misfit_DD
+            close(IIN)
+            ! estimate mean and variance 
+            mean_DD=sum(misfit_DD)/num_DD
+            if(compute_adjoint) then
+                !! save estimated var_DD
+                if(uncertainty .and. num_DD>1) var_DD=sum((misfit_DD-mean_DD)**2)/(num_DD-1)
+                write(filename,'(a,i6.6,a)') &
+                    trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_DD'
+                OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier)
+                write(IOUT,*) var_DD
+                close(IOUT)
+                seism_adj_DD=seism_adj_DD/var_DD/max(num_DD,1)
+                seism_adj = seism_adj + seism_adj_DD
+            else
+                write(filename,'(a,i6.6,a)') &
+                    trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_DD'
+                OPEN (IIN,FILE=trim(filename),status='unknown',iostat=ier)
+                read (IIN,*) var_DD
+                close(IIN)
             endif
+            ! add up misfit
+            misfit=misfit+sum(misfit_DD**2)/var_DD/max(num_DD,1)
+           if(DISPLAY_DETAILS) then
+                print*
+                print*, trim(adjustl(data_names(icomp))),' comp'
+                print*, 'misfit_',trim(trim(measurement_types(itype))),'_DD'
+                print*, 'total number of measurements :', num_DD
+                print*, 'mean_DD=',mean_DD
+                print*, 'var_DD=',var_DD
+                print*, 'misfit without uncertainty :', sum(misfit_DD**2)/num_DD
+                print*, 'misfit with uncertainty :',sum(misfit_DD**2)/var_DD/num_DD
+                print*, 'min/max of adj : ',&
+                minval(seism_adj_DD(:,:)), maxval(seism_adj_DD(:,:))
+            endif
+            deallocate(misfit_DD)
         endif
 
-        ! misfit (AD+DD+...)
-        misfit=misfit+ misfit_AD/max(num_AD,1) + misfit_DD/max(num_DD,1)
-
-        ! adjoint
+        ! measurement weighting
+        misfit=misfit*measurement_weight(itype)
         if(compute_adjoint) then 
-            seism_adj = seism_adj_AD/max(num_AD,1) + seism_adj_DD/max(num_DD,1)
+            seism_adj=seism_adj*measurement_weight(itype)
             call process_adj_all()
         endif
+
+        enddo ! itype
 
         ! finalize
         call finalize(input_dir,adjustl(data_names(icomp)))
@@ -188,6 +281,7 @@ subroutine initialize(directory,data_name)
     logical :: ex_stf
     real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: temp
     integer :: irow, ncolum
+    REAL(KIND=CUSTOM_REAL), DIMENSION(:,:), ALLOCATABLE :: noise
 
     !! data file format
     filen='empty'
@@ -243,6 +337,7 @@ subroutine initialize(directory,data_name)
         allocate(seism_adj(NSTEP,nrec_proc))
         allocate(seism_adj_AD(NSTEP,nrec_proc))
         allocate(seism_adj_DD(NSTEP,nrec_proc))
+        allocate(noise(NSTEP,nrec_proc))
         allocate(st_xval(nrec_proc))
         allocate(st_yval(nrec_proc))
         allocate(st_zval(nrec_proc))
@@ -270,6 +365,12 @@ subroutine initialize(directory,data_name)
 
         ! allocate obs and syn
         call readSU(filename_obs,seism_obs)
+        ! generate random noise to obs between 0 and 1
+        call random_number(noise)
+        ! [-1 1]*noise-level   
+        noise=(noise-0.5)*2*maxval(abs(seism_obs))*noise_level
+        ! add noise 
+        seism_obs=seism_obs+noise
         call readSU(filename_syn,seism_syn)
         do irec=1,nrec_proc
         dis_sr(irec)=sqrt((st_xval(irec)-x_source)**2 &            
@@ -283,6 +384,7 @@ subroutine initialize(directory,data_name)
             print*,'Min / Max of seism_syn : ',&
                 minval(seism_syn(:,:)),maxval(seism_syn(:,:))
         endif
+        deallocate(noise)
     endif ! exist
 
 end subroutine initialize
@@ -375,24 +477,24 @@ subroutine process_adj_all()
     integer :: irec
     real(kind=CUSTOM_REAL) :: adj(NSTEP), adj_vel(NSTEP), adj_acc(NSTEP)
 
-        !! post-processing of seism_adj
-        do irec=1,nrec_proc
-        adj(:)=seism_adj(:,irec)
-        if(norm2(adj(:))<SMALL_VAL) cycle
-        ! trace normalize
-        if(TRACE_NORMALIZE) adj=adj/trace_norm(irec)
-        ! seismotype
-        if(DISPLAY_DETAILS .and. irec==1) print*, trim(seismotype) ,' adjoint'
-        if(trim(seismotype) == "velocity") then
-            call compute_vel(adj,NSTEP,deltat,NSTEP,adj_vel)
-            seism_adj(:,irec)= - adj_vel(:)
-        elseif(trim(seismotype) == "acceleration") then
-            call compute_acc(adj,NSTEP,deltat,NSTEP,adj_acc)
-            seism_adj(:,irec)=adj_acc(:)
-        endif
-        enddo
-        ! event normalize
-        if(EVENT_NORMALIZE) seism_adj=seism_adj/event_norm
+    !! post-processing of seism_adj
+    do irec=1,nrec_proc
+    adj(:)=seism_adj(:,irec)
+    if(norm2(adj(:))<SMALL_VAL) cycle
+    ! trace normalize
+    if(TRACE_NORMALIZE) adj=adj/trace_norm(irec)
+    ! seismotype
+    if(DISPLAY_DETAILS .and. irec==1) print*, trim(seismotype) ,' adjoint'
+    if(trim(seismotype) == "velocity") then
+        call compute_vel(adj,NSTEP,deltat,NSTEP,adj_vel)
+        seism_adj(:,irec)= - adj_vel(:)
+    elseif(trim(seismotype) == "acceleration") then
+        call compute_acc(adj,NSTEP,deltat,NSTEP,adj_acc)
+        seism_adj(:,irec)=adj_acc(:)
+    endif
+    enddo
+    ! event normalize
+    if(EVENT_NORMALIZE) seism_adj=seism_adj/event_norm
 
 end subroutine process_adj_all
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -440,124 +542,66 @@ subroutine process_adj_trace(trace,istart,iend,dis)
 
 end subroutine process_adj_trace
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  `  
-subroutine Absolute_diff()
+subroutine Absolute_diff(measurement_type)
     use seismo_parameters
     implicit none
-    integer :: irec, itype, ntype
-    real(kind=CUSTOM_REAL) :: seism(NSTEP,nrec_proc)
-    real(kind=CUSTOM_REAL) :: d(NSTEP),s(NSTEP),adj_trace(NSTEP),adj(NSTEP)
-    real(kind=CUSTOM_REAL) :: wtr
-    real(kind=CUSTOM_REAL) :: misfit_value, misfit_trace
-    integer :: ntstart,ntend,nlen
-    integer :: ishift
-    real(kind=CUSTOM_REAL) :: dlnA,cc_max
-    character(len=MAX_STRING_LEN) :: measurement_types(MAX_MISFIT_TYPE)
     character(len=2) :: measurement_type
-    character, parameter :: delimiter='+'
+    integer :: irec
+    real(kind=CUSTOM_REAL) :: d(NSTEP),s(NSTEP),adj(NSTEP)
+    real(kind=CUSTOM_REAL) :: wtr
+    integer :: ntstart,ntend,nlen,num
 
     ! initialization
     d = 0.0_CUSTOM_REAL
     s = 0.0_CUSTOM_REAL
 
-    call split_string(measurement_list,delimiter,measurement_types,ntype)
-    if(ntype>mtype) then 
-        print*,'number of measurement_types exceeds number of measurement_weight: ',&
-            ntype, mtype
-        stop
-    endif
-
     do irec=1,nrec_proc
-
     ! get data 
     d(:)=seism_obs(:,irec)
     s(:)=seism_syn(:,irec)
 
     !! misfit and adjoint evaluation
     ! initialization
-    adj_trace = 0.0_CUSTOM_REAL
-    misfit_trace=0.0
+    adj(:) = 0.0
+    num = 0
 
     ! window info
     ntstart = win_start(irec)
     ntend= win_end(irec)
-
-    !! quality control (window, norm, cc similarity)
-    if (ntstart>=ntend ) cycle
+    nlen=ntend-ntstart+1
+    if(nlen<1 .or. nlen>NSTEP) cycle
     if (norm2(d(ntstart:ntend),1)<SMALL_VAL .or. &
-        norm2(s(ntstart:ntend),1)<SMALL_VAL .or. &
-        (ntend-ntstart)*deltat<window_len) &
-        cycle
+        norm2(s(ntstart:ntend),1)<SMALL_VAL) cycle
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-    if(DISPLAY_DETAILS .and. compute_adjoint) then
-        print*
-        print*,'irec=',irec
-        print*,'window -- ',ntstart,ntend
-    endif
-
-    do itype=1,ntype
-    ! initialization
-    misfit_value=0.0
-    adj(:)=0.d0
-
-    measurement_type=trim(measurement_types(itype))
+    !!  evaluate misfit and adj 
     call misfit_adj_AD(measurement_type,d,s,NSTEP,&
         deltat,f0,ntstart,ntend,&
         window_type,compute_adjoint, &
-        misfit_value,adj) 
-
-    ! sum over itype of misfit and adjoint
-    misfit_trace = misfit_trace + misfit_value**2*measurement_weight(itype)
-    if(DISPLAY_DETAILS .and. compute_adjoint) then
-        print*,'misfit_',trim(measurement_type),'_AD=',misfit_value
-        print*,'squared misfit_',trim(measurement_type),'_AD=',misfit_value**2
-        print*,'measurement_weight=',measurement_weight(itype)
+        adj,num)
+    num_AD = num_AD + num 
+    if(compute_adjoint) then 
+        call process_adj_trace(adj,ntstart,ntend,dis_sr(irec))
+        seism_adj_AD(:,irec) = seism_adj_AD(:,irec) + adj(:)
     endif
-
-    if(compute_adjoint) adj_trace = adj_trace + adj*measurement_weight(itype)
-
-    enddo !itype
-
-    if (ntype>=1) then 
-        ! window sum 
-        misfit_AD = misfit_AD + misfit_trace / ntype
-        if(compute_adjoint) then 
-            call process_adj_trace(adj_trace,ntstart,ntend,dis_sr(irec))
-            if(DISPLAY_DETAILS) then
-                print*, 'Min/Max of adj :',minval(adj_trace(:)),maxval(adj_trace(:))
-            endif
-
-            seism_adj_AD(:,irec) = seism_adj_AD(:,irec) + adj_trace(:) / ntype
-        endif
-        num_AD = num_AD +1
-    endif
-
     enddo ! irec
 
 end subroutine Absolute_diff
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine Relative_diff(input_dir,data_name)
+subroutine Relative_diff(input_dir,data_name,measurement_type)
     use seismo_parameters
     implicit none
-    integer :: irec,jrec,itype, ntype,ier
+    integer :: irec,jrec,ier
     character(len=MAX_STRING_LEN) :: input_dir
     character(len=MAX_STRING_LEN) :: data_name
     character(len=MAX_FILENAME_LEN) :: filename
     logical :: ex
-    real(kind=CUSTOM_REAL) :: seism(NSTEP,nrec_proc)
-    real(kind=CUSTOM_REAL) :: d(NSTEP),s(NSTEP),adj(NSTEP),adj_pair(NSTEP)
-    real(kind=CUSTOM_REAL) :: d_ref(NSTEP),s_ref(NSTEP),adj_ref(NSTEP),adj_ref_pair(NSTEP)
+    real(kind=CUSTOM_REAL) :: d(NSTEP),s(NSTEP),adj(NSTEP)
+    real(kind=CUSTOM_REAL) :: d_ref(NSTEP),s_ref(NSTEP),adj_ref(NSTEP)
     real(kind=CUSTOM_REAL) :: dis_sr1, dis_sr2, dis_rr
     real(kind=CUSTOM_REAL) :: cc_max_obs
-    real(kind=CUSTOM_REAL) :: misfit_value,misfit_pair
-    integer :: ntstart,ntend,nlen
+    integer :: ntstart,ntend,nlen,num
     integer :: ntstart_ref,ntend_ref,nlen_ref
-
-    character(len=MAX_STRING_LEN) :: measurement_types(MAX_MISFIT_TYPE)
     character(len=2) :: measurement_type
-    character, parameter :: delimiter='+'
-
-    call split_string(measurement_list,delimiter,measurement_types,ntype)
 
     ! initialization
     d = 0.0_CUSTOM_REAL
@@ -631,60 +675,31 @@ subroutine Relative_diff(input_dir,data_name)
 
     if(is_pair(irec,jrec)==1) then
         ! initialization
-        misfit_pair = 0.0
-        adj_pair = 0.0
-        adj_ref_pair = 0.0
+        adj = 0.0
+        adj_ref = 0.0
+        num = 0
 
         dis_sr2=dis_sr(jrec)
 
         ! number of double difference measurements
-        num_DD = num_DD+1
-
-        do itype=1,ntype
-        ! initialization
-        misfit_value = 0.0
-        adj = 0.0
-        adj_ref = 0.0
-
-        measurement_type=trim(measurement_types(itype))
-
         call misfit_adj_DD(measurement_type,d,d_ref,s,s_ref,NSTEP,deltat,f0,&
             ntstart,ntend,ntstart_ref,ntend_ref,window_type,compute_adjoint,&
-            misfit_value,adj,adj_ref)
-
-        ! sum over itype of misfit and adjoint
-        misfit_pair=misfit_pair+misfit_value**2
-        if(DISPLAY_DETAILS .and. compute_adjoint) then
-            print*,'misfit_',trim(measurement_type),'_DD=',misfit_value
-            print*,'squared misfit_',trim(measurement_type),'_DD=',misfit_value**2
-        endif
-
+            adj,adj_ref,num)
+        num_DD = num_DD + num
+    
         if(compute_adjoint) then
-            adj_pair=adj_pair+adj
-            adj_ref_pair=adj_ref_pair+adj_ref
-        endif
-
-        enddo ! itype
-
-        if (ntype>=1) then 
-
-            ! sum of misfit over all stations
-            misfit_DD=misfit_DD+ misfit_pair/ntype
-
-            if(compute_adjoint) then
-                call process_adj_trace(adj_pair,ntstart,ntend,dis_sr1)
-                call process_adj_trace(adj_ref_pair,ntstart_ref,ntend_ref,dis_sr2)
-
-                if(DISPLAY_DETAILS) then
-                    print*, 'Min/Max of adj :',minval(adj_pair(:)),maxval(adj_pair(:))
-                    print*, 'Min/Max of adj_ref:',minval(adj_ref_pair(:)),maxval(adj_ref_pair(:))
-                endif
-
-                ! sum of adjoint source over pair
-                seism_adj_DD(:,irec) = seism_adj_DD(:,irec) +  adj_pair(:)/ntype
-                seism_adj_DD(:,jrec) = seism_adj_DD(:,jrec) + adj_ref_pair(:)/ntype
+            call process_adj_trace(adj,ntstart,ntend,dis_sr1)
+            call process_adj_trace(adj_ref,ntstart_ref,ntend_ref,dis_sr2)
+            if(DISPLAY_DETAILS) then
+                print*, 'Min/Max of adj :',minval(adj(:)),maxval(adj(:))
+                print*, 'Min/Max of adj_ref:',minval(adj_ref(:)),maxval(adj_ref(:))
             endif
-        endif
+        
+            ! sum of adjoint source over pair
+            seism_adj_DD(:,irec) = seism_adj_DD(:,irec) +  adj(:)
+            seism_adj_DD(:,jrec) = seism_adj_DD(:,jrec) + adj_ref(:)
+
+        endif ! compute_adjoint
 
         !! save waveform similarity
         if(.not. ex) write(IIN,'(2I5,1e15.5,I5)') irec,jrec,cc_max_obs,is_pair(irec,jrec)
@@ -696,6 +711,7 @@ subroutine Relative_diff(input_dir,data_name)
 
     close(IIN) ! close similarity file
 
+    print*, 'Total number of DD pairs :', sum(sum(is_pair,dim=1))
     deallocate(is_pair)
 
 end subroutine Relative_diff

@@ -19,13 +19,17 @@ specfem2d/.*swp
 specfem2d/.*swo
 specfem2d/*~
 # scotch 
-specfem2d/src/meshfem2D/scotch_5.1.12b/
+specfem2d/src/meshfem2D/scotch_5.1.12b/*
 #EXAMPLES
-specfem2d/EXAMPLES/
+specfem2d/EXAMPLES/*
 
 # lib 
 seisDD/lib/*
 !seisDD/lib/src
+
+# system 
+seisDD/system/job_info
+seisDD/system/test/*exe
 
 # user private EXAMPLES folder
 EXAMPLES/*
@@ -39,4 +43,4 @@ GJI2016/Exp4/submit_job
 GJI2016/Exp5/submit_job
 
 # visualize
-visualize/plot_bin
+auxiliaries/visualize/plot_bin

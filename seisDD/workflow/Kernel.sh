@@ -51,7 +51,7 @@ velocity_dir=$target_velocity_dir
 if [ $system == 'slurm' ]; then
     srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
 elif [ $system == 'pbs' ]; then 
-    pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/prepare_data.sh $velocity_dir 2> ./job_info/error_target
+    pbsdsh -v $SCRIPTS_DIR/prepare_data.sh $velocity_dir
 fi
 
 echo
@@ -70,7 +70,7 @@ compute_adjoint=true
 if [ $system == 'slurm' ]; then
     srun -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_current
 elif [ $system == 'pbs' ]; then
-    pbsdsh -n $ntasks -c $NPROC_SPECFEM -l -W 0 $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint 2> ./job_info/error_current
+    pbsdsh -v $SCRIPTS_DIR/Adjoint.sh $velocity_dir $compute_adjoint
 fi
 
 echo
@@ -79,7 +79,13 @@ mkdir -p $SUBMIT_RESULT/misfit
 step_length=0.0
 iter=1
 ./bin/data_misfit.exe $iter $step_length $compute_adjoint $NPROC_SPECFEM $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_data_misfit
+if [ -d "$SUBMIT_RESULT/m_target" ]; then
+    echo "model misfit ......"
+    ./bin/model_misfit.exe $NPROC_SPECFEM $iter $SUBMIT_RESULT/m_target $SUBMIT_RESULT/m_current $SUBMIT_RESULT 2> ./job_info/error_model_misfit
+fi
 
+# continue?
+echo
 file=$SUBMIT_RESULT/misfit/search_status.dat
 is_cont=$(awk -v "line=1" 'NR==line { print $1 }' $file)
 is_done=$(awk -v "line=2" 'NR==line { print $1 }' $file)
@@ -108,12 +114,12 @@ elif [ $solver == 'specfem3D' ]; then
     mkdir OUTPUT_FILES/DATABASES_MPI
     cp $SUBMIT_RESULT/misfit_kernel/proc*external_mesh.bin OUTPUT_FILES/DATABASES_MPI/
 fi
-mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_list $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_misfit_kernel
+mpirun -np $NPROC_SPECFEM ./bin/sum_kernel.exe $kernel_list,$precond_name $WORKING_DIR $SUBMIT_RESULT 2> ./job_info/error_misfit_kernel
 
 if $smooth ; then
     echo 
     echo "smooth misfit kernel ... "
-    mpirun -np $NPROC_SPECFEM ./bin/xsmooth_sem $sigma_x $sigma_z $z_precond $kernel_list,$precond_list $SUBMIT_RESULT/misfit_kernel/ $SUBMIT_RESULT/misfit_kernel/ $GPU_MODE 2> ./job_info/error_smooth_kernel
+    mpirun -np $NPROC_SPECFEM ./bin/xsmooth_sem $sigma_x $sigma_z $z_precond $kernel_list,$precond_name $SUBMIT_RESULT/misfit_kernel/ $SUBMIT_RESULT/misfit_kernel/ $GPU_MODE 2> ./job_info/error_smooth_kernel
 fi
 
 echo

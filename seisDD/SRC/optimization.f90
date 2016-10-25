@@ -6,13 +6,12 @@ program optimization
     implicit none
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-    integer, parameter :: NARGS = 6
+    integer, parameter :: NARGS = 5
     INTEGER :: itime, ier, isrc,i,j,iter
     character(len=MAX_STRING_LEN) :: kernel_names(MAX_KERNEL_NUM)
     character(len=MAX_STRING_LEN) :: kernel_names_comma_delimited
     character(len=MAX_STRING_LEN) :: model_names(MAX_KERNEL_NUM)
     character(len=MAX_STRING_LEN) :: model_names_comma_delimited
-    character(len=MAX_STRING_LEN) :: precond_name
     character(len=MAX_STRING_LEN) :: arg(NARGS)
     character(len=MAX_STRING_LEN) :: directory
     real t1,t2
@@ -23,7 +22,7 @@ program optimization
     ! parse command line arguments
     if (command_argument_count() /= NARGS) then
         if (DISPLAY_DETAILS) then
-            print *, 'USAGE:  mpirun -np NPROC bin/gradient.exe ...'
+            print *, 'USAGE:  ./bin/optimization.exe ...'
             stop ' Please check command line arguments'
         endif
     endif
@@ -35,9 +34,8 @@ program optimization
     read(arg(1),*) nproc
     directory=arg(2) 
     kernel_names_comma_delimited = arg(3)
-    precond_name=arg(4)
-    model_names_comma_delimited = arg(5)
-    read(arg(6),*) iter
+    model_names_comma_delimited = arg(4)
+    read(arg(5),*) iter
 
     call split_string(kernel_names_comma_delimited,delimiter,kernel_names,nker)
     call split_string(model_names_comma_delimited,delimiter,model_names,nmod)
@@ -54,8 +52,8 @@ program optimization
     endif
 
     !! initialization  -- get number of spectral elements
-    call initialize(directory,adjustl(kernel_names(1:NKER)),&
-        adjustl(precond_name),adjustl(model_names(1:nmod))) 
+    call initialize(directory,adjustl(kernel_names(1:NKER)), &
+        adjustl(model_names(1:nmod))) 
 
     !! optimization(update) direction
     call update_direction(directory,adjustl(kernel_names(1:NKER)),iter)
@@ -69,7 +67,7 @@ program optimization
 
 end program optimization
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine initialize(directory,kernel_names,precond_name,model_names)
+subroutine initialize(directory,kernel_names,model_names)
     use seismo_parameters
     implicit none
     integer :: ier,iker,imod
@@ -79,7 +77,6 @@ subroutine initialize(directory,kernel_names,precond_name,model_names)
     character(len=MAX_STRING_LEN) :: directory
     character(len=MAX_STRING_LEN) :: kernel_names(nker)
     character(len=MAX_STRING_LEN) :: model_names(nmod)
-    character(len=MAX_STRING_LEN) :: precond_name
     real(kind=CUSTOM_REAL), dimension(:,:,:,:,:),allocatable :: temp_store
     real(kind=CUSTOM_REAL), dimension(:,:,:,:),allocatable :: preconditioner
 

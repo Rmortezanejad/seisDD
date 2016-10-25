@@ -71,7 +71,7 @@ program sum_kernel
 
     ! loop over kernel
     do iker= 1, nker
-    if(len(trim(adjustl(kernel_names(iker))))>0) then !non-empty
+    if(len_trim(kernel_names(iker))>0) then !non-empty
         ! initialize
         sum_dat = 0.0_CUSTOM_REAL
         dat = 0.0_CUSTOM_REAL

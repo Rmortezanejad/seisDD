@@ -9,7 +9,7 @@ queue='tiger'   # serial,tiger(princeton) ...
 max_nproc_per_node=16 # max number of processors per node
 ntasks=1
 NPROC_SPECFEM=4
-WallTime=60
+WallTime=300
 compiler='ifort'
 GPU_MODE=false
 job='inversion' # modeling,kernel,inversion
@@ -34,7 +34,7 @@ initial_velocity_dir="$seisDD/GJI2016/Exp3/model_init_bin"
 NSTEP=4800
 # sample rate
 deltat=0.06 #s  
-f0=0.0084
+f0=0.084
 # number of receivers
 NREC=132
 # number of sources
@@ -44,7 +44,7 @@ data_list='y'
 
 ### kernel construction
 # measurement type (CC WD ET ED IP MT MA) 
-measurement_list=CC
+measurement_list=IP
 # misfit_type (AD, DD, AD+DD)
 misfit_type_list=DD
 # similarity threshold for DD 
@@ -53,7 +53,7 @@ cc_threshold=0.90
 ## inversion parameters
 kernel_list='beta_kernel'
 precond=false
-precond_list='hessian2_kernel'
+precond_list='Hessian2_kernel'
 z_precond=0.0
 model_list='vs'
 

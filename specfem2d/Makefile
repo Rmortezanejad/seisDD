@@ -13,28 +13,19 @@
 # the two-dimensional viscoelastic anisotropic or poroelastic wave equation
 # using a spectral-element method (SEM).
 #
-# This software is governed by the CeCILL license under French law and
-# abiding by the rules of distribution of free software. You can use,
-# modify and/or redistribute the software under the terms of the CeCILL
-# license as circulated by CEA, CNRS and Inria at the following URL
-# "http://www.cecill.info".
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
 #
-# As a counterpart to the access to the source code and rights to copy,
-# modify and redistribute granted by the license, users are provided only
-# with a limited warranty and the software's author, the holder of the
-# economic rights, and the successive licensors have only limited
-# liability.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-# In this respect, the user's attention is drawn to the risks associated
-# with loading, using, modifying and/or developing or reproducing the
-# software by the user in light of its specific status of free software,
-# that may mean that it is complicated to manipulate, and that also
-# therefore means that it is reserved for developers and experienced
-# professionals having in-depth computer knowledge. Users are therefore
-# encouraged to load and test the software's suitability as regards their
-# requirements in conditions enabling the security of their systems and/or
-# data to be ensured and, more generally, to use and operate it in the
-# same conditions as regards security.
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 # The full text of the license is available in file "LICENSE".
 #
@@ -48,7 +39,7 @@ FCFLAGS = -g
 MPIFC = mpif90
 MPILIBS = 
 
-FLAGS_CHECK = -xHost -fpe0 -ftz -assume buffered_io -assume byterecl -align sequence -vec-report0 -std03 -diag-disable 6477 -implicitnone -gen-interfaces -warn all -O3 -check nobounds
+FLAGS_CHECK = -xHost -fpe0 -ftz -assume buffered_io -assume byterecl -align sequence -std08 -diag-disable 6477 -implicitnone -gen-interfaces -warn all -O3 -check nobounds
 
 FCFLAGS_f90 = -mod ./obj -I./obj -I.  -I${SETUP}
 
@@ -95,6 +86,9 @@ F90 = $(MPIFCCOMPILE_CHECK) -DUSE_MPI
 ####
 #######################################
 
+SCOTCH=yes
+#SCOTCH=no
+
 USE_BUNDLED_SCOTCH = 1
 
 SCOTCH_DIR = ./src/meshfem2D/scotch
@@ -104,11 +98,7 @@ SCOTCH_LIBDIR = ./src/meshfem2D/scotch/lib
 SCOTCH_INC = -I${SCOTCH_INCDIR}
 SCOTCH_LIBS = -L${SCOTCH_LIBDIR} -lscotch -lscotcherr
 
-F90 += -DUSE_SCOTCH $(SCOTCH_INC)
-
-## scotch libraries
-MPILIBS += ${SCOTCH_LIBS}
-#MPILIBS +=
+SCOTCH_FLAGS = -DUSE_SCOTCH $(SCOTCH_INC)
 
 #######################################
 ####
@@ -127,6 +117,9 @@ CUDA5 = no
 #CUDA6 = yes
 CUDA6 = no
 
+#CUDA7 = yes
+CUDA7 = no
+
 # CUDA compilation with linking
 #CUDA_PLUS = yes
 CUDA_PLUS = no
@@ -136,7 +129,7 @@ CUDA_PLUS = no
 
 CUDA_FLAGS =  
 CUDA_INC =  -I${SETUP}
-CUDA_LINK =  
+CUDA_LINK =   -lstdc++
 
 #NVCC = nvcc
 NVCC = gcc
@@ -149,11 +142,15 @@ NVCC = gcc
 # Geforce GT 650m: -gencode=arch=compute_30,code=sm_30
 # Kepler (cuda5) : -gencode=arch=compute_35,code=sm_35
 # Kepler (cuda6.5,K80): -gencode=arch=compute_37,code=sm_37
+# Maxwell (cuda6.5+/cuda7,Quadro K2200): -gencode=arch=compute_50,code=sm_50
 GENCODE_20 = -gencode=arch=compute_20,code=\"sm_20,compute_20\"
 GENCODE_30 = -gencode=arch=compute_30,code=\"sm_30,compute_30\"
 GENCODE_35 = -gencode=arch=compute_35,code=\"sm_35,compute_35\"
 GENCODE_37 = -gencode=arch=compute_37,code=\"sm_37\"
+GENCODE_50 = -gencode=arch=compute_50,code=\"sm_50\"
 
+# CUDA version 7.x
+##GENCODE = $(GENCODE_50)
 # CUDA version 6.5
 ##GENCODE = $(GENCODE_37)
 # CUDA version 5.x
@@ -211,6 +208,7 @@ SUBDIRS = \
 	shared \
 	specfem2D \
 	tomography/postprocess_sensitivity_kernels \
+	tomography \
 	$(EMPTY_MACRO)
 
 # default targets for the pure Fortran version
@@ -225,7 +223,7 @@ DEFAULT = \
 
 default: $(DEFAULT)
 
-all: default auxiliaries postprocess
+all: default auxiliaries postprocess tomography
 
 
 ifdef CLEAN
@@ -245,11 +243,25 @@ clean:
 endif
 
 realclean: clean
-ifeq (${SCOTCH_BUNDLED},1)
+ifeq (${USE_BUNDLED_SCOTCH},1)
 	@echo "cleaning bundled Scotch in directory: ${SCOTCH_DIR}/src"
 	$(MAKE) -C ${SCOTCH_DIR}/src realclean
 endif
 	-rm -rf $E/* $O/*
+
+# unit testing
+# If the first argument is "test"...
+ifeq (test,$(findstring test,firstword $(MAKECMDGOALS)))
+  # use the rest as arguments for "run"
+  TEST_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  # turn them into do-nothing targets
+  $(eval $(TEST_ARGS):;@:)
+endif
+
+tests:
+	@echo "testing in directory: ${S_TOP}/tests/"
+	cd ${S_TOP}/tests; ./run_all_tests.sh $(TEST_ARGS)
+	@echo ""
 
 
 help:
@@ -269,9 +281,15 @@ help:
 	@echo "    xcombine_sem"
 	@echo "    xsmooth_sem"
 	@echo ""
+	@echo "- tomography tools: [make tomography]"
+	@echo "    xsum_kernels"
+	@echo ""
+	@echo "for unit testing:"
+	@echo "    tests"
+	@echo ""
 
 
-.PHONY: all default backup clean realclean help
+.PHONY: all default backup clean realclean help tests
 
 #######################################
 
@@ -302,9 +320,10 @@ endef
 
 $(foreach dir, $(SUBDIRS), $(eval $(call shortcut,$(dir))))
 
+# shortcut testing
+test : tests
 
 # Other old shortcuts
-
 mesh : $E/xmeshfem2D
 spec : $E/xspecfem2D
 .PHONY: mesh spec
