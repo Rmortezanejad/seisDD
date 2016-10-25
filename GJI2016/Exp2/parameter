@@ -34,7 +34,7 @@ initial_velocity_dir="$seisDD/GJI2016/Exp2/model_init_bin"
 NSTEP=4800
 # sample rate
 deltat=0.06 #s  
-f0=0.0084
+f0=0.084
 # number of receivers
 NREC=2
 # number of sources

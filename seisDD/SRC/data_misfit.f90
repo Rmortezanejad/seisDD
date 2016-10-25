@@ -56,6 +56,7 @@ program data_misfit
                 OPEN (UNIT=IOUT, FILE=trim(filename),status='unknown',POSITION='APPEND')
                 write(IOUT,'(I5,e15.8)') iter-1,misfit_cur
                 close(IOUT)
+                print*,'misfit_hist for niter',iter, ':',misfit_cur
             else ! check iteration
                 call check_iteration(output_dir)
             endif
@@ -140,7 +141,7 @@ subroutine check_iteration(directory)
     enddo
     close(IIN)
     niter = j
-    print*,'misfit_hist for niter ',niter, ' :',misfit_hist(1:niter)
+    print*,'misfit_hist for niter',niter, ':',misfit_hist(1:niter)
 
     ! absolute misfit small enough
     if(misfit_hist(niter)<=SMALL_VAL) then

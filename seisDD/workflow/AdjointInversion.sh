@@ -223,7 +223,7 @@ do
 done  # end of iterative updates
 
 echo
-echo "******************finish all iterations for ${misfit_type_list} $job *************"
+echo "******************finish all ${iter_end} iterations for ${misfit_type_list} $job *************"
 
 cp -r $SUBMIT_DIR/parameter $SUBMIT_RESULT/
 cp -r $SUBMIT_DIR/job_info/output $SUBMIT_RESULT/
