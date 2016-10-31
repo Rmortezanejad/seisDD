@@ -549,7 +549,7 @@ subroutine Absolute_diff(measurement_type)
     integer :: irec
     real(kind=CUSTOM_REAL) :: d(NSTEP),s(NSTEP),adj(NSTEP)
     real(kind=CUSTOM_REAL) :: wtr
-    integer :: ntstart,ntend,nlen,num
+    integer :: ntstart,ntend,nlen,num,num_measure=0
 
     ! initialization
     d = 0.0_CUSTOM_REAL
@@ -579,12 +579,14 @@ subroutine Absolute_diff(measurement_type)
         window_type,compute_adjoint, &
         adj,num)
     num_AD = num_AD + num 
+    num_measure=num_measure+1
+
     if(compute_adjoint) then 
         call process_adj_trace(adj,ntstart,ntend,dis_sr(irec))
         seism_adj_AD(:,irec) = seism_adj_AD(:,irec) + adj(:)
     endif
     enddo ! irec
-
+    print*, 'Total number of AD measurements :', num_measure
 end subroutine Absolute_diff
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine Relative_diff(input_dir,data_name,measurement_type)
@@ -599,7 +601,7 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
     real(kind=CUSTOM_REAL) :: d_ref(NSTEP),s_ref(NSTEP),adj_ref(NSTEP)
     real(kind=CUSTOM_REAL) :: dis_sr1, dis_sr2, dis_rr
     real(kind=CUSTOM_REAL) :: cc_max_obs
-    integer :: ntstart,ntend,nlen,num
+    integer :: ntstart,ntend,nlen,num,num_measure=0
     integer :: ntstart_ref,ntend_ref,nlen_ref
     character(len=2) :: measurement_type
 
@@ -686,6 +688,7 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
             ntstart,ntend,ntstart_ref,ntend_ref,window_type,compute_adjoint,&
             adj,adj_ref,num)
         num_DD = num_DD + num
+        num_measure=num_measure+1
     
         if(compute_adjoint) then
             call process_adj_trace(adj,ntstart,ntend,dis_sr1)
@@ -708,10 +711,8 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
 
     enddo  ! jrec 
     enddo ! irec 
-
     close(IIN) ! close similarity file
-
-    print*, 'Total number of DD pairs :', sum(sum(is_pair,dim=1))
+    print*, 'Total number of DD measurements :', num_measure
     deallocate(is_pair)
 
 end subroutine Relative_diff

@@ -44,7 +44,7 @@ data_list='y'
 
 ### kernel construction
 # measurement type (CC WD ET ED IP MT MA) 
-measurement_list=IP
+measurement_list=CC
 # misfit_type (AD, DD, AD+DD)
 misfit_type_list=DD
 # similarity threshold for DD 
