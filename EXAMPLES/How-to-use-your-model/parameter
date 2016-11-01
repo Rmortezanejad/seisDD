@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Example to demo how to incorporate your own cartesian model into SEM 
+
+### job info
+Job_title='Demo-model'
+system='slurm'  # slurm, lsf or pbs
+queue='tiger'   # serial,tiger(princeton) ...
+max_nproc_per_node=16 # max number of processors per node
+ntasks=1
+NPROC_SPECFEM=4
+WallTime=10
+compiler='ifort'
+GPU_MODE=false
+job='modeling' # modeling,kernel,inversion
+solver='specfem2D' # specfem2D, specfem3D
+ReStart=true   # true--Relaunch all files; false--Start from current status
+
+### paths
+package_path="$seisDD/seisDD"
+specfem_path="$seisDD/specfem2d"
+
+### observations 
+ExistDATA=false
+# if exist provide path, otherwise ignore
+DATA_DIR="$seisDD/EXAMPLES/How-to-use-your-model"
+
+### model paths
+target_velocity_dir="$seisDD/EXAMPLES/How-to-use-your-model/model"
+initial_velocity_dir=" "
+
+### forward modeling
+# number of samples in data
+NSTEP=3000
+# sample rate
+deltat=2.0e-4 #s  
+f0=15
+# number of receivers
+NREC=72
+# number of sources
+NSRC=1
+# measurement (x,y,z,p)
+data_list='x,z'
+
+DISPLAY_DETAILS=true

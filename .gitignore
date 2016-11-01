@@ -37,6 +37,8 @@ seisDD/system/test/*exe
 # user private EXAMPLES folder
 EXAMPLES/*
 !EXAMPLES/readme
+!EXAMPLES/How-to-use-your-model/
+EXAMPLES/How-to-use-your-model/submit_job
 
 # GJI2016 
 GJI2016/Exp1/submit_job

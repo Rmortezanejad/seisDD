@@ -62,36 +62,39 @@ read -p "Is the correct workflow selected (y/n)?" yn
 if [ $yn == 'n' ]; then
     exit
 fi
-echo
-echo " renew parameter file ..."
-cp $package_path/SRC/seismo_parameters.f90 ./bin/
-cp $package_path/lib/src/constants.f90 ./bin/
-cp $package_path/scripts/renew_parameter.sh ./
-./renew_parameter.sh
+## not modeling 
+if [ "${job,,}" != "${var1,,}"  ]; then
+    echo
+    echo " renew parameter file ..."
+    cp $package_path/SRC/seismo_parameters.f90 ./bin/
+    cp $package_path/lib/src/constants.f90 ./bin/
+    cp $package_path/scripts/renew_parameter.sh ./
+    ./renew_parameter.sh
 
-echo 
-read -p "Do you wish to comiple lib codes (y/n)?" yn
-if [ $yn == 'y' ]; then 
-    rm -rf *.mod make_*
-    cp $package_path/lib/make_lib ./make_lib
-    FILE="make_lib"
-    sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/lib/src#g"  $FILE > temp;  mv temp $FILE
-    sed -e "s#^MOD_DIR=.*#MOD_DIR=./bin#g"  $FILE > temp;  mv temp $FILE
-    sed -e "s#^LIB_preprocess=.*#LIB_preprocess=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
-    make -f make_lib clean
-    make -f make_lib
-fi
+    echo 
+    read -p "Do you wish to comiple lib codes (y/n)?" yn
+    if [ $yn == 'y' ]; then 
+        rm -rf *.mod make_*
+        cp $package_path/lib/make_lib ./make_lib
+        FILE="make_lib"
+        sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/lib/src#g"  $FILE > temp;  mv temp $FILE
+        sed -e "s#^MOD_DIR=.*#MOD_DIR=./bin#g"  $FILE > temp;  mv temp $FILE
+        sed -e "s#^LIB_preprocess=.*#LIB_preprocess=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
+        make -f make_lib clean
+        make -f make_lib
+    fi
 
-echo 
-read -p "Do you wish to comiple source codes (y/n)?" yn
-if [ $yn == 'y' ]; then
-    cp $package_path/make/make_$compiler ./make_file
-    FILE="make_file"
-    sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/SRC#g"  $FILE > temp;  mv temp $FILE
-    sed -e "s#^LIB_seismo=.*#LIB_seismo=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
-    make -f make_file clean
-    make -f make_file
-fi 
+    echo 
+    read -p "Do you wish to comiple source codes (y/n)?" yn
+    if [ $yn == 'y' ]; then
+        cp $package_path/make/make_$compiler ./make_file
+        FILE="make_file"
+        sed -e "s#^SRC_DIR=.*#SRC_DIR=$package_path/SRC#g"  $FILE > temp;  mv temp $FILE
+        sed -e "s#^LIB_seismo=.*#LIB_seismo=./bin/seismo.a#g"  $FILE > temp;  mv temp $FILE
+        make -f make_file clean
+        make -f make_file
+    fi 
+fi ## not modeling 
 
 nproc=$NPROC_SPECFEM
 ntaskspernode=$(echo "$max_nproc_per_node $nproc" | awk '{ print $1/$2 }')

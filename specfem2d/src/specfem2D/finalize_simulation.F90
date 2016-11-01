@@ -66,18 +66,24 @@
     do ispec= 1,nspec
       do j = 1,NGLLZ
         do i = 1,NGLLX
-          rho_save(i,j,ispec) = density(1,kmato(ispec))
+          !rho_save(i,j,ispec) = density(1,kmato(ispec)) !YY
+          rho_save(i,j,ispec)            = rhostore(i,j,ispec)  !YY
           lambdal_unrelaxed_elastic = poroelastcoef(1,1,kmato(ispec))
           mul_unrelaxed_elastic = poroelastcoef(2,1,kmato(ispec))
           if (AXISYM) then ! CHECK kappa
             kappa_save(i,j,ispec) = lambdal_unrelaxed_elastic + TWO_THIRDS * mul_unrelaxed_elastic
-            vp_save(i,j,ispec) = sqrt((kappa_save(i,j,ispec) + FOUR_THIRDS *mul_unrelaxed_elastic)/density(1,kmato(ispec)))
+           ! vp_save(i,j,ispec) = sqrt((kappa_save(i,j,ispec) + FOUR_THIRDS *mul_unrelaxed_elastic)/density(1,kmato(ispec))) !YY
+            vp_save(i,j,ispec) = sqrt((kappastore(i,j,ispec) + &
+                               FOUR_THIRDS * mustore(i,j,ispec))/rhostore(i,j,ispec)) !YY
           else
             kappa_save(i,j,ispec) = lambdal_unrelaxed_elastic + mul_unrelaxed_elastic
-            vp_save(i,j,ispec) = sqrt((kappa_save(i,j,ispec) + mul_unrelaxed_elastic)/density(1,kmato(ispec)))
+           ! vp_save(i,j,ispec) = sqrt((kappa_save(i,j,ispec) + mul_unrelaxed_elastic)/density(1,kmato(ispec))) !YY
+           vp_save(i,j,ispec) = sqrt((kappastore(i,j,ispec) + &
+               mustore(i,j,ispec))/rhostore(i,j,ispec)) !YY
           endif
+          vs_save(i,j,ispec) = sqrt(mustore(i,j,ispec)/rhostore(i,j,ispec)) !YY
 
-          vs_save(i,j,ispec) = sqrt(mul_unrelaxed_elastic/density(1,kmato(ispec)))
+          !vs_save(i,j,ispec) = sqrt(mul_unrelaxed_elastic/density(1,kmato(ispec)))
 
           iglob = ibool(i,j,ispec)
           x_save(i,j,ispec) = coord(1,iglob)

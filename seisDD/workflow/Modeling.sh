@@ -20,7 +20,7 @@ cd $SUBMIT_DIR
 #################### input parameters ###################################################
 # directories
 export SCRIPTS_DIR="$package_path/scripts"
-export SUBMIT_RESULT="$SUBMIT_DIR/RESULTS/$job/Scale${Wscale}_${measurement_list}_${misfit_type_list}"     # final results
+export SUBMIT_RESULT="$SUBMIT_DIR/RESULTS/$job"     # final results
 if [ -z "$working_path" ]; then
     export working_path=$SUBMIT_DIR
 fi

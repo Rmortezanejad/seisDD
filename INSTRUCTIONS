@@ -48,3 +48,43 @@ cd $seisDD/GJI2016
 # parameter: inversion parameter file including path setting and inversion parameters
 # SU_process: preprocessing procedure using SU package (optional)
 # run_this_example.sh (shared for all examples)
+#
+# How to convert your own model on cartesian grid to SEM GLL grid
+# see example in $seisDD/EXAMPLES/How-to-use-your-model
+# Step one: modify DATA/Par_file (see example in $seisDD/EXAMPLES/How-to-use-your-model/DATA/Par_file)
+#          MODEL = default
+#          SAVE_MODEL= binary
+#          #tomo example 
+#          1 -1 1500 800 400 0 0 0 0 0 0 0 0 0 0
+#          TOMOGRAPHY_FILE = ./DATA/tomo_file.xyz
+# Step two: prepare tomo file 
+# Formate of tomo file (example in $seisDD/EXAMPLES/How-to-use-your-model/model/tomo_file.xyz)
+#! ORIGIN_X ORIGIN_Z END_X END_Z
+#! SPACING_X SPACING_Z
+#! NX NZ
+#! VP_MIN VP_MAX VS_MIN VS_MAX RHO_MIN RHO_MAX
+#! x(1) z(1) vp vs rho
+#! x(2) z(1) vp vs rho
+#! ...
+#! x(NX) z(1) vp vs rho
+#! x(1) z(2) vp vs rho
+#! x(2) z(2) vp vs rho
+#! ...
+#! x(NX) z(2) vp vs rho
+#! x(1) z(3) vp vs rho
+#! ...
+#! ...
+#! x(NX) z(NZ) vp vs rho
+# Step three: run forward simulation 
+#             ./bin/xmeshfem2D 
+#             mpirun -np $nproc ./bin/xspecfem2D
+# SEM model can be found in DATA/proc*.bin             
+# Step four: check generated SEM model 
+# modify DATA/Par_file (see example in $seisDD/EXAMPLES/How-to-use-your-model/DATA/Par_file_binary)
+#          MODEL = binary
+#          SAVE_MODEL= default
+#          #non tomo example 
+#          1 1 1500 800 400 0 0 9999 9999 0 0 0 0 0 0
+# run forward simulation
+#             ./bin/xmeshfem2D 
+#             mpirun -np $nproc ./bin/xspecfem2D

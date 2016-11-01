@@ -111,7 +111,8 @@
        write(IMAIN,*) 'QKappa = ',sngl(QKappa(imaterial_number))
        write(IMAIN,*) 'Qmu    = ',sngl(Qmu(imaterial_number))
 
-       if (poisson_ratio <= -1.00001d0 .or. poisson_ratio >= 0.50001d0) stop 'incorrect value of Poisson''s ratio'
+       !! YY -- not check poisson ratio right now
+       !if (poisson_ratio <= -1.00001d0 .or. poisson_ratio >= 0.50001d0) stop 'incorrect value of Poisson''s ratio'
 
     else if (icodemat(imaterial_number) == POROELASTIC_MATERIAL) then
 

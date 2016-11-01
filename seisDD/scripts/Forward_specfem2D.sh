@@ -7,7 +7,7 @@ data_list=$4
 velocity_dir=$5
 SAVE_FORWARD=$6
 WORKING_DIR=$7
-DATA_DIR=$8
+SUBMIT_RESULT=$8
 job=$9
 
 if [ $isource -eq 1 ] ; then
@@ -18,7 +18,7 @@ if [ $isource -eq 1 ] ; then
     echo "velocity_dir=$velocity_dir"
     echo "SAVE_FORWARD=$SAVE_FORWARD"
     echo "WORKING_DIR=$WORKING_DIR"
-    echo "DATA_DIR=$DATA_DIR"
+    echo "SUBMIT_RESULT=$SUBMIT_RESULT"
     echo "job=$job"
 fi
 
@@ -91,8 +91,7 @@ done
 
 if [ "$data_tag" == "DATA_obs" ] && [ "$job" == "modeling" ]; 
 then
-    mkdir -p $DATA_DIR 
-    ISRC_DATA_DIR_SAVE=$( seq --format="$DATA_DIR/%06.f/" $(($isource-1)) $(($isource-1)) )
+    ISRC_DATA_DIR_SAVE=$( seq --format="$SUBMIT_RESULT/%06.f/" $(($isource-1)) $(($isource-1)) )
     rm -rf $ISRC_DATA_DIR_SAVE
     mkdir -p $ISRC_DATA_DIR_SAVE 
     cp -r $ISRC_DATA_DIR/* $ISRC_DATA_DIR_SAVE/

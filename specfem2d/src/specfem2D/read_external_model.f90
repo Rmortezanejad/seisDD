@@ -117,7 +117,6 @@
 
     read(1001) rhoext
     close(1001)
-    print *, 'rho', minval(rhoext), maxval(rhoext)
 
     write(inputname,'(a,i6.6,a)') 'DATA/proc',myrank,'_vp.bin'
     open(unit = 1001, file = inputname, status='old',action='read',form='unformatted',iostat=ier)
@@ -237,6 +236,19 @@
     stop 'Invalid MODEL parameter'
 
   end select
+  if(myrank==0) then
+      print*, 'input model type -- ',trim(MODEL) !YY
+      print*, 'YY, min/max of rhoext --',&
+          minval(rhoext(:,:,:)),maxval(rhoext(:,:,:))
+      print*, 'YY, min/max of vpext --',&
+          minval(vpext(:,:,:)),maxval(vpext(:,:,:))
+      print*, 'YY, min/max of vsext --',&
+          minval(vsext(:,:,:)),maxval(vsext(:,:,:))
+      print*, 'YY, min/max of QKappa_ext --',&
+          minval(QKappa_attenuationext(:,:,:)),maxval(QKappa_attenuationext(:,:,:))
+      print*, 'YY, min/max of Qmu_ext --',&
+          minval(Qmu_attenuationext(:,:,:)),maxval(Qmu_attenuationext(:,:,:))
+  endif
 
   ! check that the external model that has just been defined makes sense
   if (trim(MODEL) == 'external' .or. trim(MODEL) == 'tomo') then
