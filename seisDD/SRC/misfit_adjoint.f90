@@ -596,9 +596,13 @@ subroutine Absolute_diff(measurement_type)
     call misfit_adj_AD(measurement_type,d,s,NSTEP,&
         deltat,f0,ntstart,ntend,&
         window_type,compute_adjoint, &
-        adj,num)
+        adj,num,misfit_AD)
     num_AD = num_AD + num 
     num_measure=num_measure+1
+    if(DISPLAY_DETAILS) then 
+        print*
+        print*,'irec=',irec, 'misfit_',measurement_type,'_AD=',misfit_AD
+    endif
 
     if(compute_adjoint) then 
         call process_adj_trace(adj,ntstart,ntend,dis_sr(irec))
@@ -705,9 +709,13 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
         ! number of double difference measurements
         call misfit_adj_DD(measurement_type,d,d_ref,s,s_ref,NSTEP,deltat,f0,&
             ntstart,ntend,ntstart_ref,ntend_ref,window_type,compute_adjoint,&
-            adj,adj_ref,num)
+            adj,adj_ref,num,misfit_DD)
         num_DD = num_DD + num
         num_measure=num_measure+1
+        if(DISPLAY_DETAILS) then 
+            print* 
+            print*,'irec=',irec,'jrec=',jrec, 'misfit_',measurement_type,'_DD=',misfit_DD
+        endif
     
         if(compute_adjoint) then
             call process_adj_trace(adj,ntstart,ntend,dis_sr1)
