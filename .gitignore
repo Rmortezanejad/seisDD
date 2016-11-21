@@ -27,8 +27,7 @@ specfem2d/src/meshfem2D/scotch_5.1.12b/src/*
 specfem2d/EXAMPLES/*
 
 # lib 
-seisDD/lib/*
-!seisDD/lib/src
+seisDD/lib/tests
 
 # system 
 seisDD/system/job_info
