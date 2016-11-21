@@ -70,6 +70,8 @@ real(kind=CUSTOM_REAL), parameter :: mt_threshold=0.9! eigenvalue threshold
 !integer, parameter :: MW=10 ! number of segments of uncorrelated frequency points 
 real(kind=CUSTOM_REAL), parameter :: NW=3
 integer, parameter :: NTAPER=int(2*NW-1)
+! normalize
+logical :: NORMALIZE=.false.
 ! error estimation 
 logical :: USE_ERROR_CC=.false.
 ! minimum error for dt and dlnA

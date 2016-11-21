@@ -12,6 +12,10 @@ FILE="$EXE_DIR/constants.f90"
 if [ ! -z "$wtr_env" ]; then
     sed -e "s#^real(kind=CUSTOM_REAL), parameter :: wtr_env=.*#real(kind=CUSTOM_REAL), parameter :: wtr_env=$wtr_env #g"  $FILE > temp;  mv temp $FILE
 fi
+if [ ! -z "$NORMALIZE" ]; then
+    sed -e "s#^logical :: NORMALIZE=.*#logical :: NORMALIZE=.$NORMALIZE. #g"  $FILE > temp;  mv temp $FILE
+fi
+
 ############################# modify seismo_parameters.f90 ################################################## 
 FILE="$EXE_DIR/seismo_parameters.f90"
 sed -e "s#^Job_title=.*#Job_title=$Job_title #g"  $FILE > temp;  mv temp $FILE
@@ -114,9 +118,9 @@ if [ ! -z "$TRACE_NORMALIZE" ]; then
     sed -e "s#^LOGICAL :: TRACE_NORMALIZE=.*#LOGICAL :: TRACE_NORMALIZE=.$TRACE_NORMALIZE.#g"  $FILE > temp;  mv temp $FILE    
 fi
 
-# measurement type weight 
+# measurement type weight
 if [ ! -z "$measurement_weight" ]; then
-    sed -e "s#^INTEGER, PARAMETER :: mtype=.*#INTEGER, PARAMETER :: mtype=${#measurement_weight[*]}#g"  $FILE > temp;  mv temp $FILE
+    sed -e "s#^INTEGER, PARAMETER :: mtype=.*#INTEGER, PARAMETER :: mtype=${#measurement_weight[*]} #g"  $FILE > temp;  mv temp $FILE
     sed -e "s#^REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=.*#REAL(KIND=CUSTOM_REAL), DIMENSION(mtype) :: measurement_weight=[${measurement_weight[*]}]#g"  $FILE > temp;  mv temp $FILE
 fi
 if [ ! -z "$uncertainty" ]; then 

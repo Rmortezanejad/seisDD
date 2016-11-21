@@ -153,9 +153,11 @@ REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: stf
 INTEGER :: stf_len
 
 !! misfit
-REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: misfit_AD,misfit_DD
+REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: measurement_AD,measurement_AD_error
+REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: measurement_DD,measurement_DD_error
 REAL(KIND=CUSTOM_REAL) :: mean_AD, var_AD, std_AD
 REAL(KIND=CUSTOM_REAL) :: mean_DD, var_DD, std_DD
+REAL(KIND=CUSTOM_REAL) :: misfit_AD, misfit_DD
 INTEGER :: num_AD, num_DD
 INTEGER, DIMENSION(:,:), ALLOCATABLE :: is_pair
 REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE :: misfit_proc

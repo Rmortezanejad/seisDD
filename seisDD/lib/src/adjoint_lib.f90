@@ -147,7 +147,7 @@ subroutine WD_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
 
     ! index 
     integer :: i
-    real(kind=CUSTOM_REAL) :: const=1.0
+    real(kind=CUSTOM_REAL) :: const, err_WD
 
     ! window
     integer :: nlen
@@ -161,9 +161,14 @@ subroutine WD_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     if(nlen<1 .or. nlen>npts) print*,'check nlen ',nlen
 
     !! WD misfit
-    const = sum(d_tw(1:nlen)**2)*deltat
+    const=1.0
+    err_WD=1.0
+    if(NORMALIZE) then
+        const = sqrt(sum(d_tw(1:nlen)**2)*deltat)
+        err_WD=err_WD*const
+    endif
     do i=1,nlen 
-    write(IOUT,*) (s_tw(i)-d_tw(i))*sqrt(deltat)/sqrt(const)
+    write(IOUT,*) (s_tw(i)-d_tw(i))*sqrt(deltat)/err_WD
     enddo
     num=nlen
 
@@ -186,7 +191,7 @@ subroutine WD_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
 
     !! WD adjoint
     if(COMPUTE_ADJOINT) then
-        adj_tw(1:nlen) =  (s_tw(1:nlen)-d_tw(1:nlen))/const
+        adj_tw(1:nlen) =  (s_tw(1:nlen)-d_tw(1:nlen))/err_WD**2
 
         ! reverse window and taper again 
         call cc_window_inverse(adj_tw,npts,window_type,i_tstart,i_tend,0,0.d0,adj)
@@ -227,7 +232,9 @@ subroutine CC_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,compute_adj
     real(kind=CUSTOM_REAL), dimension(npts) :: d_tw,s_tw 
     ! cc 
     integer :: ishift
-    real(kind=CUSTOM_REAL) :: tshift, dlnA, cc_max 
+    real(kind=CUSTOM_REAL) :: tshift, dlnA, cc_max
+    real(kind=CUSTOM_REAL) :: err_dt_cc,err_dlnA_cc
+    real(kind=CUSTOM_REAL) :: const, err_CC
     ! adjoint
     real(kind=CUSTOM_REAL) :: Mtr
     real(kind=CUSTOM_REAL), dimension(npts) :: s_tw_vel, adj_tw 
@@ -239,8 +246,21 @@ subroutine CC_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,compute_adj
 
     !! CC misfit
     call xcorr_calc(s_tw,d_tw,npts,1,nlen,ishift,dlnA,cc_max) ! T(s-d)
+
+    !! cc_error
+    const=1.0
+    err_CC=1.0
+    err_dt_cc=1.0
+    err_dlnA_cc=1.0
+    if(USE_ERROR_CC) call cc_error(d_tw,s_tw,npts,deltat,nlen,ishift,dlnA,&
+                        err_dt_cc,err_dlnA_cc)
+    if(NORMALIZE) then
+        ! arrival time estimated from peak of waves
+        const=(i_tstart+MAXLOC(abs(d_tw),1))*deltat
+        err_CC=err_dt_cc*const 
+    endif        
     tshift = ishift*deltat  
-    write(IOUT,*) tshift
+    write(IOUT,*) tshift/err_CC
     num=1
 
     if( DISPLAY_DETAILS) then
@@ -265,7 +285,7 @@ subroutine CC_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,compute_adj
         Mtr=-sum(s_tw_vel(1:nlen)*s_tw_vel(1:nlen))*deltat
 
         ! adjoint source
-        adj_tw(1:nlen)=  tshift*s_tw_vel(1:nlen)/Mtr 
+        adj_tw(1:nlen)=  tshift*s_tw_vel(1:nlen)/Mtr/err_CC**2 
 
         ! reverse window and taper again 
         call cc_window_inverse(adj_tw,npts,window_type,i_tstart,i_tend,0,0.d0,adj)
@@ -303,6 +323,7 @@ subroutine ET_misfit(d,s,npts,deltat,f0,i_tstart,i_tend,window_type,compute_adjo
     ! window
     integer :: nlen
     real(kind=CUSTOM_REAL), dimension(npts) :: d_tw,s_tw
+    real(kind=CUSTOM_REAL) :: const, err_ET
 
     ! for hilbert transformation
     real(kind=CUSTOM_REAL) :: epslon
@@ -344,9 +365,17 @@ subroutine ET_misfit(d,s,npts,deltat,f0,i_tstart,i_tend,window_type,compute_adjo
     ! envelope
     E_s(1:nlen) = sqrt(s_tw(1:nlen)**2+hilbt_s(1:nlen)**2)
 
-    ! misfit
+    ! ET misfit
     call xcorr_calc(E_s,E_d,nlen,1,nlen,ishift,dlnA,cc_max) ! T(Es-Ed)
-    tshift = ishift*deltat
+    const=1.0
+    err_ET=1.0
+    if(NORMALIZE) then
+        ! arrival time estimated from peak of envelopes
+        const=(i_tstart+MAXLOC(abs(E_d),1))*deltat
+        err_ET=err_ET*const
+    endif
+
+    tshift = ishift*deltat/err_ET
     write(IOUT,*) tshift
     num=1
 
@@ -385,7 +414,7 @@ subroutine ET_misfit(d,s,npts,deltat,f0,i_tstart,i_tend,window_type,compute_adjo
 
         ! adjoint source
         adj_tw(1:nlen)=E_ratio(1:nlen)*s_tw(1:nlen)-hilbt_ratio(1:nlen)
-        adj_tw(1:nlen)=adj_tw(1:nlen)
+        adj_tw(1:nlen)=adj_tw(1:nlen)/err_ET**2
 
         if( DISPLAY_DETAILS) then
             open(1,file=trim(output_dir)//'/E_ratio',status='unknown')
@@ -428,7 +457,7 @@ subroutine ED_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     logical, intent(in) :: compute_adjoint
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
-
+    real(kind=CUSTOM_REAL) :: const, err_ED
     ! window
     integer :: nlen
     real(kind=CUSTOM_REAL), dimension(npts) :: d_tw,s_tw
@@ -468,8 +497,15 @@ subroutine ED_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     E_s(1:nlen) = sqrt(s_tw(1:nlen)**2+hilbt_s(1:nlen)**2) 
 
     ! ED misfit
+    const=1.0
+    err_ED=1.0
+    if(NORMALIZE) then
+        const = sqrt(sum(E_d(1:nlen)**2)*deltat)
+        err_ED=err_ED*const
+    endif
+
     do i=1,nlen
-    write(IOUT,*) (E_s(i)-E_d(i))*sqrt(deltat)
+    write(IOUT,*) (E_s(i)-E_d(i))*sqrt(deltat)/err_ED
     enddo
     num=nlen
 
@@ -501,6 +537,7 @@ subroutine ED_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
 
         ! adjoint source
         adj_tw(1:nlen)=E_ratio(1:nlen)*s_tw(1:nlen)-hilbt_ratio(1:nlen)
+        adj_tw(1:nlen)=adj_tw(1:nlen)/err_ED**2
 
         if( DISPLAY_DETAILS) then
             open(1,file=trim(output_dir)//'/E_ratio',status='unknown')
@@ -558,6 +595,8 @@ subroutine IP_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     real(kind=CUSTOM_REAL), dimension(npts) :: hilbt_d, hilbt_s, real_diff, imag_diff
 
     real(kind=CUSTOM_REAL) :: tas(npts)
+    real(kind=CUSTOM_REAL) :: const, err_IP
+
     ! adjoint
     real(kind=CUSTOM_REAL), dimension(npts) :: adj_tw
 
@@ -602,11 +641,18 @@ subroutine IP_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     imag_diff= (hilbt_s(1:nlen)/(E_s(1:nlen)+wtr_s) - hilbt_d(1:nlen)/(E_d(1:nlen)+wtr_d)) !*tas(1:nlen)
 
     ! IP misfit
+    const=1.0
+    err_IP=1.0
+    if(NORMALIZE) then
+        const = sqrt(sum((d_tw(1:nlen)/(E_d(1:nlen)+wtr_d))**2)*deltat + &
+            sum((hilbt_d(1:nlen)/(E_d(1:nlen)+wtr_d))**2)*deltat)
+        err_IP=err_IP*const
+    endif
     do i=1,nlen
-    write(IOUT,*) real_diff(i)*sqrt(deltat)
-    write(IOUT,*) imag_diff(i)*sqrt(deltat)
+    write(IOUT,*) real_diff(i)*sqrt(deltat)/err_IP
+    write(IOUT,*) imag_diff(i)*sqrt(deltat)/err_IP
     enddo
-    num=nlen*2
+    num=nlen
 
     if(DISPLAY_DETAILS) then
         print*
@@ -635,7 +681,7 @@ subroutine IP_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
         call hilbert(hilbt_ratio,nlen)
 
         ! adjoint source
-        adj_tw(1:nlen)=E_ratio(1:nlen) + hilbt_ratio
+        adj_tw(1:nlen)=(E_ratio(1:nlen) + hilbt_ratio)/err_IP**2
 
         ! reverse window and taper again 
         call cc_window_inverse(adj_tw,npts,window_type,i_tstart,i_tend,0,0.d0,adj)
@@ -677,7 +723,7 @@ subroutine MT_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,misfit_type
     ! cc 
     integer :: ishift
     real(kind=CUSTOM_REAL) :: tshift, dlnA, cc_max
-    real(kind=CUSTOM_REAL) :: err_dt_cc=0.0,err_dlnA_cc=1.0
+    real(kind=CUSTOM_REAL) :: err_dt_cc,err_dlnA_cc
 
     ! FFT parameters
     real(kind=CUSTOM_REAL), dimension(NPT) :: wvec,fvec
@@ -714,6 +760,8 @@ subroutine MT_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,misfit_type
     endif
 
     !! cc_error
+    err_dt_cc=0.0
+    err_dlnA_cc=1.0
     if(USE_ERROR_CC)  call cc_error(d_tw,s_tw,npts,deltat,nlen,ishift,dlnA,&
         err_dt_cc,err_dlnA_cc)
 
@@ -854,7 +902,7 @@ subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     real(kind=CUSTOM_REAL) :: cc_max_syn,cc_max_obs
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj1,adj2
-
+    real(kind=CUSTOM_REAL) :: const, err_DD_CC
     ! index
     integer :: i
 
@@ -889,7 +937,15 @@ subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     !! double-difference cc-measurement 
     ddtshift_cc = tshift_syn - tshift_obs
     ddlnA_cc = dlnA_syn - dlnA_obs
-    write(IOUT,*) ddtshift_cc
+    ! DD CC misfit
+    const=1.0            
+    err_DD_CC=1.0
+    if(NORMALIZE) then                                
+        const = tshift_obs
+        err_DD_CC=err_DD_CC*const
+    endif
+
+    write(IOUT,*) ddtshift_cc/err_DD_CC
     num=1
 
     if( DISPLAY_DETAILS) then
@@ -949,8 +1005,8 @@ subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         Mtr=-sum(s1_tw_vel(1:nlen)*s2_tw_cc_vel(1:nlen))*deltat
 
         ! adjoint source
-        adj1_tw(1:nlen)= +ddtshift_cc * s2_tw_cc_vel(1:nlen)/Mtr
-        adj2_tw(1:nlen)= -ddtshift_cc * s1_tw_cc_vel(1:nlen)/Mtr
+        adj1_tw(1:nlen)= +ddtshift_cc * s2_tw_cc_vel(1:nlen)/Mtr/err_DD_CC**2
+        adj2_tw(1:nlen)= -ddtshift_cc * s1_tw_cc_vel(1:nlen)/Mtr/err_DD_CC**2
 
         ! reverse window and taper again 
         call cc_window_inverse(adj1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)
@@ -990,6 +1046,7 @@ subroutine WD_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     logical, intent(in) :: compute_adjoint
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj1,adj2
+    real(kind=CUSTOM_REAL) :: const, err_DD_WD
 
     ! index
     integer :: i
@@ -1008,12 +1065,15 @@ subroutine WD_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     if(nlen1<1 .or. nlen1>npts) print*,'check nlen1 ',nlen1
     if(nlen2<1 .or. nlen2>npts) print*,'check nlen2 ',nlen2
     nlen = max(nlen1,nlen2)
-    !! DD wd-misfit
-    !! double-difference wd-measurement 
-   ! misfit_output = sqrt(sum(((s1_tw(1:nlen)-s2_tw(1:nlen)) - (d1_tw(1:nlen)-d2_tw(1:nlen)))**2*deltat))
-   ! const = sum(d_tw(1:nlen)**2)*deltat
+    ! DD WD misfit
+    const=1.0            
+    err_DD_WD=1.0
+    if(NORMALIZE) then                                
+        const = sqrt(sum((d1_tw(1:nlen)-d2_tw(1:nlen))**2)*deltat)
+        err_DD_WD=err_DD_WD*const
+    endif
     do i=1,nlen
-    write(IOUT,*) ((s1_tw(i)-s2_tw(i)) - (d1_tw(i)-d2_tw(i)))*sqrt(deltat)
+    write(IOUT,*) ((s1_tw(i)-s2_tw(i)) - (d1_tw(i)-d2_tw(i)))*sqrt(deltat)/err_DD_WD
     enddo
     num=nlen
 
@@ -1035,8 +1095,9 @@ subroutine WD_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         adj2(1:npts) = 0.0
 
         ! adjoint source
-        adj1_tw(1:nlen)=  (s1_tw(1:nlen)-s2_tw(1:nlen)) -(d1_tw(1:nlen)-d2_tw(1:nlen))
+        adj1_tw(1:nlen)= ( (s1_tw(1:nlen)-s2_tw(1:nlen)) -(d1_tw(1:nlen)-d2_tw(1:nlen)) )/err_DD_WD**2
         adj2_tw(1:nlen)=  - adj1_tw(1:nlen)
+
 
         ! reverse window and taper again 
         call cc_window_inverse(adj1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)
@@ -1065,6 +1126,7 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     logical, intent(in) :: compute_adjoint
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj1,adj2
+    real(kind=CUSTOM_REAL) :: const, err_DD_IP
 
     ! index
     integer :: i
@@ -1135,12 +1197,21 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         - (d1_tw(1:nlen)/(E_d1(1:nlen)+wtr_d1) - d2_tw(1:nlen)/(E_d2(1:nlen)+wtr_d2)) 
     imag_ddiff = (hilbt_s1(1:nlen)/(E_s1(1:nlen)+wtr_s1) - hilbt_s2(1:nlen)/(E_s2(1:nlen)+wtr_s2)) &
         - (hilbt_d1(1:nlen)/(E_d1(1:nlen)+wtr_d1) - hilbt_d2(1:nlen)/(E_d2(1:nlen)+wtr_d2))
-    !misfit_output = sqrt(sum(real_ddiff**2*deltat+imag_ddiff**2*deltat))
+    ! DD IP misfit
+    const=1.0
+    err_DD_IP=1.0
+    if(NORMALIZE) then
+        const = sqrt(sum((d1_tw(1:nlen)/(E_d1(1:nlen)+wtr_d1) & 
+            - d2_tw(1:nlen)/(E_d2(1:nlen)+wtr_d2))**2)*deltat + &
+            sum((hilbt_d1(1:nlen)/(E_d1(1:nlen)+wtr_d1) &
+            - hilbt_d2(1:nlen)/(E_d2(1:nlen)+wtr_d2))**2)*deltat)
+        err_DD_IP=err_DD_IP*const
+    endif
     do i=1,nlen
-    write(IOUT,*) real_ddiff(i)*sqrt(deltat)
-    write(IOUT,*) imag_ddiff(i)*sqrt(deltat)
+    write(IOUT,*) real_ddiff(i)*sqrt(deltat)/err_DD_IP
+    write(IOUT,*) imag_ddiff(i)*sqrt(deltat)/err_DD_IP
     enddo
-    num=nlen*2
+    num=nlen
 
     !! DD Instantaneous phase adjoint
     if(COMPUTE_ADJOINT) then
@@ -1158,6 +1229,7 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         call hilbert(hilbt_ratio,nlen)
         ! adjoint source
         adj1_tw(1:nlen)=E_ratio(1:nlen) + hilbt_ratio
+        adj1_tw(1:nlen)=adj1_tw(1:nlen)/err_DD_IP**2
 
         !! adjoint source2
         E_ratio(:) = 0.0
@@ -1168,6 +1240,7 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         call hilbert(hilbt_ratio,nlen)
         ! adjoint source
         adj2_tw(1:nlen)=E_ratio(1:nlen) + hilbt_ratio
+        adj2_tw(1:nlen)=adj2_tw(1:nlen)/err_DD_IP**2
 
         ! reverse window and taper again 
         call cc_window_inverse(adj1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)

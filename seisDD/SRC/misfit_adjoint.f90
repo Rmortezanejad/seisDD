@@ -22,6 +22,7 @@ program misfit_adjoint
     character(len=MAX_STRING_LEN) :: measurement_types(MAX_MISFIT_TYPE)
     integer :: itype,ntype
     character, parameter :: delimiter='+'
+    logical :: ex
 
 #ifdef USE_MPI
     call MPI_INIT(ier)
@@ -111,123 +112,140 @@ program misfit_adjoint
             print*, 'measurement type should be at least 1'
             stop
         endif
+        ! sum of the weight to be 1
+        measurement_weight=measurement_weight/sum(measurement_weight(1:ntype))
 
-        do itype=1, ntype 
+        do itype=1, ntype
+       ! initialize 
+        seism_adj_AD = 0.0_CUSTOM_REAL
+        seism_adj_DD = 0.0_CUSTOM_REAL
         num_AD=0
         num_DD=0
+        misfit_AD=0.0
+        misfit_DD=0.0
+        mean_AD=0.0
+        mean_DD=0.0
+        var_AD=1.0
+        var_DD=1.0
 
         ! absolute mwasurement  
         if(index(misfit_type_list,'AD')>0) then
-            ! initialize
-            seism_adj_AD = 0.0_CUSTOM_REAL 
-            num_AD=0
-            mean_AD=0.0
-            var_AD=1.0
-
             write(filename,'(a,i6.6,a)') &
                 trim(input_dir)//'/proc',myrank,'_misfit_'//trim(measurement_types(itype))//'_AD'
             OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier) 
             call Absolute_diff(trim(measurement_types(itype)))
             close(IOUT)
-            ! load misfit_AD
-            allocate(misfit_AD(num_AD))
+            ! load measurement_AD
+            if(trim(measurement_types(itype))=='IP') then 
+                allocate(measurement_AD(2*num_AD))
+            else
+                allocate(measurement_AD(num_AD))
+            endif
             OPEN (UNIT=IIN, FILE=filename,iostat=ier)
-            read(IIN,*) misfit_AD
+            read(IIN,*) measurement_AD
             close(IIN)
             ! estimate mean and variance 
-            mean_AD=sum(misfit_AD)/num_AD
-            if(compute_adjoint) then
-                !! save estimated var_AD
-                if(uncertainty .and. num_AD>1) var_AD=sum((misfit_AD-mean_AD)**2)/(num_AD-1)
+            mean_AD=sum(measurement_AD)/num_AD
+            ! distribution estimated variance
+            if(uncertainty .and. num_AD>1) then
                 write(filename,'(a,i6.6,a)') &
                     trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_AD'
-                OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier)
-                write(IOUT,*) var_AD
-                close(IOUT)
-                seism_adj_AD=seism_adj_AD/var_AD/max(num_AD,1)
-                seism_adj = seism_adj + seism_adj_AD
-            else
-                write(filename,'(a,i6.6,a)') &
-                    trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_AD'
-                OPEN (IIN,FILE=trim(filename),status='unknown',iostat=ier)
-                read (IIN,*) var_AD
-                close(IIN) 
+                ex=.false.
+                inquire (file=trim(filename), exist=ex)
+                if(ex) then
+                    ! use provided var_AD
+                    OPEN (IIN,FILE=trim(filename),status='unknown',iostat=ier)
+                    read (IIN,*) var_AD
+                    close(IIN)
+                else
+                    ! save estimated var_AD
+                    var_AD=sum((measurement_AD-mean_AD)**2)/(num_AD-1)
+                    OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier)
+                    write(IOUT,*) var_AD
+                    close(IOUT)
+                endif
             endif
-            ! add up misfit
-            misfit=misfit+sum(misfit_AD**2)/var_AD/max(num_AD,1)
+
+            ! misfit and adj
+            misfit_AD=sum(measurement_AD**2)/var_AD/max(num_AD,1)*measurement_weight(itype)
+            seism_adj_AD=seism_adj_AD/var_AD/max(num_AD,1)*measurement_weight(itype)
+
             if(DISPLAY_DETAILS) then
                 print*
                 print*, trim(adjustl(data_names(icomp))),' comp'
                 print*, 'misfit_',trim(trim(measurement_types(itype))),'_AD'
+                print*, 'measurement_weight : ', measurement_weight(itype)
                 print*, 'total number of measurements :', num_AD
                 print*, 'mean_AD=',mean_AD
                 print*, 'var_AD=',var_AD
-                print*, 'misfit without uncertainty :', sum(misfit_AD**2)/num_AD
-                print*, 'misfit with uncertainty :',sum(misfit_AD**2)/var_AD/num_AD
+                print*, 'misfit_AD :',misfit_AD 
                 print*, 'min/max of adj : ',&
                 minval(seism_adj_AD(:,:)), maxval(seism_adj_AD(:,:))
             endif
-            deallocate(misfit_AD)
+            deallocate(measurement_AD)
         endif
 
         ! differential measurement
         if (nrec_proc>1 .and. index(misfit_type_list,'DD')>0) then
-          ! initialize
-            seism_adj_DD = 0.0_CUSTOM_REAL
-            num_DD=0
-            mean_DD=0.0
-            var_DD=1.0
-
             write(filename,'(a,i6.6,a)') &
                 trim(input_dir)//'/proc',myrank,'_misfit_'//trim(measurement_types(itype))//'_DD'
             OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier)
             call Relative_diff(input_dir,adjustl(data_names(icomp)),trim(measurement_types(itype)))
             close(IOUT)
-            ! load misfit_DD
-            allocate(misfit_DD(num_DD))
+            ! load measurement_DD
+            if(trim(measurement_types(itype))=='IP') then
+                allocate(measurement_DD(2*num_DD))
+            else
+                allocate(measurement_DD(num_DD))
+            endif
             OPEN (UNIT=IIN, FILE=filename,iostat=ier)
-            read(IIN,*) misfit_DD
+            read(IIN,*) measurement_DD
             close(IIN)
             ! estimate mean and variance 
-            mean_DD=sum(misfit_DD)/num_DD
-            if(compute_adjoint) then
-                !! save estimated var_DD
-                if(uncertainty .and. num_DD>1) var_DD=sum((misfit_DD-mean_DD)**2)/(num_DD-1)
+            mean_DD=sum(measurement_DD)/num_DD
+            ! distribution estimated variance
+            if(uncertainty .and. num_DD>1) then
                 write(filename,'(a,i6.6,a)') &
                     trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_DD'
-                OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier)
-                write(IOUT,*) var_DD
-                close(IOUT)
-                seism_adj_DD=seism_adj_DD/var_DD/max(num_DD,1)
-                seism_adj = seism_adj + seism_adj_DD
-            else
-                write(filename,'(a,i6.6,a)') &
-                    trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_DD'
-                OPEN (IIN,FILE=trim(filename),status='unknown',iostat=ier)
-                read (IIN,*) var_DD
-                close(IIN)
+                ex=.false.
+                inquire (file=trim(filename), exist=ex)
+                if(ex) then
+                    ! use provided var_DD
+                    OPEN (IIN,FILE=trim(filename),status='unknown',iostat=ier)
+                    read (IIN,*) var_DD
+                    close(IIN)
+                else
+                    ! save estimated var_DD
+                    var_DD=sum((measurement_DD-mean_DD)**2)/(num_DD-1)
+                    OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier)
+                    write(IOUT,*) var_DD
+                    close(IOUT)
+                endif
             endif
-            ! add up misfit
-            misfit=misfit+sum(misfit_DD**2)/var_DD/max(num_DD,1)
+
+            ! misfit and adj
+            misfit_DD=sum(measurement_DD**2)/var_DD/max(num_DD,1)*measurement_weight(itype)
+            seism_adj_DD=seism_adj_DD/var_DD/max(num_DD,1)*measurement_weight(itype)
+
            if(DISPLAY_DETAILS) then
                 print*
                 print*, trim(adjustl(data_names(icomp))),' comp'
                 print*, 'misfit_',trim(trim(measurement_types(itype))),'_DD'
+                print*, 'measurement_weight : ', measurement_weight(itype)
                 print*, 'total number of measurements :', num_DD
                 print*, 'mean_DD=',mean_DD
                 print*, 'var_DD=',var_DD
-                print*, 'misfit without uncertainty :', sum(misfit_DD**2)/num_DD
-                print*, 'misfit with uncertainty :',sum(misfit_DD**2)/var_DD/num_DD
+                print*, 'misfit_DD :', misfit_DD
                 print*, 'min/max of adj : ',&
                 minval(seism_adj_DD(:,:)), maxval(seism_adj_DD(:,:))
             endif
-            deallocate(misfit_DD)
+            deallocate(measurement_DD)
         endif
 
-        ! measurement weighting
-        misfit=misfit*measurement_weight(itype)
+        ! combine misfit and adj for AD and DD
+        misfit=misfit+misfit_AD + misfit_DD
         if(compute_adjoint) then 
-            seism_adj=seism_adj*measurement_weight(itype)
+            seism_adj=seism_adj + seism_adj_AD + seism_adj_DD
             call process_adj_all()
         endif
 
@@ -549,11 +567,12 @@ subroutine Absolute_diff(measurement_type)
     integer :: irec
     real(kind=CUSTOM_REAL) :: d(NSTEP),s(NSTEP),adj(NSTEP)
     real(kind=CUSTOM_REAL) :: wtr
-    integer :: ntstart,ntend,nlen,num,num_measure=0
+    integer :: ntstart,ntend,nlen,num,num_measure
 
     ! initialization
     d = 0.0_CUSTOM_REAL
     s = 0.0_CUSTOM_REAL
+    num_measure=0
 
     do irec=1,nrec_proc
     ! get data 
@@ -586,7 +605,7 @@ subroutine Absolute_diff(measurement_type)
         seism_adj_AD(:,irec) = seism_adj_AD(:,irec) + adj(:)
     endif
     enddo ! irec
-    print*, 'Total number of AD measurements :', num_measure
+    if(DISPLAY_DETAILS) print*, 'Total number of AD measurements :', num_measure
 end subroutine Absolute_diff
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine Relative_diff(input_dir,data_name,measurement_type)
@@ -712,7 +731,7 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
     enddo  ! jrec 
     enddo ! irec 
     close(IIN) ! close similarity file
-    print*, 'Total number of DD measurements :', num_measure
+    if(DISPLAY_DETAILS) print*, 'Total number of DD measurements :', num_measure
     deallocate(is_pair)
 
 end subroutine Relative_diff
