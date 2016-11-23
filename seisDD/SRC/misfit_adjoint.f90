@@ -167,7 +167,7 @@ program misfit_adjoint
             endif
 
             ! misfit and adj
-            misfit_AD=sum(measurement_AD**2)/var_AD/max(num_AD,1)*measurement_weight(itype)
+            misfit_AD=0.5*sum(measurement_AD**2)/var_AD/max(num_AD,1)*measurement_weight(itype)
             seism_adj_AD=seism_adj_AD/var_AD/max(num_AD,1)*measurement_weight(itype)
 
             if(DISPLAY_DETAILS) then
@@ -224,7 +224,7 @@ program misfit_adjoint
             endif
 
             ! misfit and adj
-            misfit_DD=sum(measurement_DD**2)/var_DD/max(num_DD,1)*measurement_weight(itype)
+            misfit_DD=0.5*sum(measurement_DD**2)/var_DD/max(num_DD,1)*measurement_weight(itype)
             seism_adj_DD=seism_adj_DD/var_DD/max(num_DD,1)*measurement_weight(itype)
 
            if(DISPLAY_DETAILS) then

@@ -174,7 +174,7 @@ subroutine WD_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     write(IOUT,*) (s_tw(i)-d_tw(i))*sqrt(deltat)/err_WD
     enddo
     num=nlen
-    misfit=sum((s_tw(1:nlen)-d_tw(1:nlen))**2*deltat)/err_WD**2
+    misfit=0.5*sum((s_tw(1:nlen)-d_tw(1:nlen))**2*deltat)/err_WD**2
 
     if( DISPLAY_DETAILS) then
         print*
@@ -267,7 +267,7 @@ subroutine CC_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,compute_adj
     tshift = ishift*deltat  
     write(IOUT,*) tshift/err_CC
     num=1
-    misfit=(tshift/err_CC)**2
+    misfit=0.5*(tshift/err_CC)**2
 
     if( DISPLAY_DETAILS) then
         print*
@@ -385,7 +385,7 @@ subroutine ET_misfit(d,s,npts,deltat,f0,i_tstart,i_tend,window_type,compute_adjo
     tshift = ishift*deltat
     write(IOUT,*) tshift/err_ET
     num=1
-    misfit=(tshift/err_ET)**2
+    misfit=0.5*(tshift/err_ET)**2
 
     if( DISPLAY_DETAILS) then
         print*
@@ -517,7 +517,7 @@ subroutine ED_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     write(IOUT,*) (E_s(i)-E_d(i))*sqrt(deltat)/err_ED
     enddo
     num=nlen
-    misfit=sum((E_s(1:nlen)-E_d(1:nlen))**2*deltat)/err_ED**2
+    misfit=0.5*sum((E_s(1:nlen)-E_d(1:nlen))**2*deltat)/err_ED**2
 
     if( DISPLAY_DETAILS) then
         print*
@@ -665,8 +665,8 @@ subroutine IP_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     write(IOUT,*) imag_diff(i)*sqrt(deltat)/err_IP
     enddo
     num=nlen
-    misfit=sum(real_diff(1:nlen)**2*deltat)/err_IP**2 + &
-        sum(imag_diff(1:nlen)**2*deltat)/err_IP**2
+    misfit=0.5*sum(real_diff(1:nlen)**2*deltat)/err_IP**2 + &
+        0.5*sum(imag_diff(1:nlen)**2*deltat)/err_IP**2
 
     if(DISPLAY_DETAILS) then
         print*
@@ -845,12 +845,12 @@ subroutine MT_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,misfit_type
         do i=i_fstart,i_fend
         write(IOUT,*) dtau_w(i)*sqrt(dw)
         enddo
-        misfit=sum(dtau_w(i_fstart:i_fend)**2*dw)
+        misfit=0.5*sum(dtau_w(i_fstart:i_fend)**2*dw)
     elseif(misfit_type=='MA') then
         ! MA misfit
         do i=i_fstart,i_fend
         write(IOUT,*) dlnA_w(i)*sqrt(dw)
-        misfit=sum(dlnA_w(i_fstart:i_fend)**2*dw)
+        misfit=0.5*sum(dlnA_w(i_fstart:i_fend)**2*dw)
         enddo
     endif
     num=i_fend-i_fstart+1
@@ -965,7 +965,7 @@ subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
 
     write(IOUT,*) ddtshift_cc/err_DD_CC
     num=1
-    misfit=(ddtshift_cc/err_DD_CC)**2
+    misfit=0.5*(ddtshift_cc/err_DD_CC)**2
 
     if( DISPLAY_DETAILS) then
         print*
@@ -1096,7 +1096,7 @@ subroutine WD_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     write(IOUT,*) ((s1_tw(i)-s2_tw(i)) - (d1_tw(i)-d2_tw(i)))*sqrt(deltat)/err_DD_WD
     enddo
     num=nlen
-    misfit=sum(((s1_tw(1:nlen)-s2_tw(1:nlen)) - (d1_tw(1:nlen)-d2_tw(1:nlen)))**2*deltat)/err_DD_WD**2
+    misfit=0.5*sum(((s1_tw(1:nlen)-s2_tw(1:nlen)) - (d1_tw(1:nlen)-d2_tw(1:nlen)))**2*deltat)/err_DD_WD**2
 
     if( DISPLAY_DETAILS) then
         print*
@@ -1234,8 +1234,8 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     write(IOUT,*) imag_ddiff(i)*sqrt(deltat)/err_DD_IP
     enddo
     num=nlen
-    misfit=sum(real_ddiff(1:nlen)**2*deltat)/err_DD_IP**2 + &
-        sum(imag_ddiff(1:nlen)**2*deltat)/err_DD_IP**2
+    misfit=0.5*sum(real_ddiff(1:nlen)**2*deltat)/err_DD_IP**2 + &
+        0.5*sum(imag_ddiff(1:nlen)**2*deltat)/err_DD_IP**2
 
     !! DD Instantaneous phase adjoint
     if(COMPUTE_ADJOINT) then
@@ -1345,7 +1345,7 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
     !! double-difference cc-measurement 
     ddtshift_cc = tshift_syn - tshift_obs
     ddlnA_cc = dlnA_syn - dlnA_obs
-    misfit=ddtshift_cc**2
+    misfit=0.5*ddtshift_cc**2
 
     if(USE_ERROR_CC) then
         !! cc_error 
