@@ -89,7 +89,7 @@ end subroutine initialize
 subroutine update(directory)
     use seismo_parameters
     implicit none
-    integer :: ier,imod
+    integer :: ier
     character(len=MAX_FILENAME_LEN) :: filename
     character(len=MAX_STRING_LEN) :: directory
 
@@ -157,6 +157,8 @@ subroutine finalize(directory,model_names)
     write(IOUT) temp_store(:,:,:,nspec_start:nspec_end,imod)
     close(IOUT)
     enddo ! imod
+    !!! personalize your own rhop-vp-vs relationship using
+    !trim(model_names(imod))
     enddo ! myrank
 
     deallocate(temp_store)

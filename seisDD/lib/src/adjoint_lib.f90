@@ -2,9 +2,9 @@
 !! created by Yanhua O. Yuan ( yanhuay@princeton.edu)
 
 !----------------------------------------------------------------------
-subroutine misfit_adj_AD(measurement_type,d,s,NSTEP,deltat,f0,ntstart,ntend,&
-        window_type,compute_adjoint, &
-        adj,num,misfit)
+subroutine misfit_adj_AD(measurement_type,d,s,NSTEP,deltat,f0,&
+        tstart,tend,taper_percentage,taper_type, &
+        compute_adjoint,adj,num,misfit)
     !! conventional way to do tomography, 
     !! using absolute-difference measurements of data(d) and syn (s)
 
@@ -14,53 +14,50 @@ subroutine misfit_adj_AD(measurement_type,d,s,NSTEP,deltat,f0,ntstart,ntend,&
     ! inputs & outputs 
     character(len=2), intent(in) :: measurement_type
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d,s
+    integer, intent(in) :: NSTEP
     real(kind=CUSTOM_REAL), intent(in) :: deltat,f0
-    integer, intent(in) :: NSTEP,ntstart,ntend,window_type
+    real(kind=CUSTOM_REAL), intent(in) :: tstart,tend
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
     logical, intent(in) :: compute_adjoint
+    real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
-    real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
-
+ 
     ! initialization within loop of irec
     adj(1:NSTEP)=0.d0
     num=1
+    misfit=0.0
 
     select case (measurement_type)
     case ("CC")
         if(DISPLAY_DETAILS) print*, 'CC (traveltime) misfit (s-d)'
-        call CC_misfit(d,s,NSTEP,deltat,f0,ntstart,ntend,&
-            window_type,compute_adjoint, &
-            adj,num,misfit)
-    case ("WD")
+        call CC_misfit(d,s,NSTEP,deltat,f0,tstart,tend,taper_percentage,taper_type, &
+            compute_adjoint,adj,num,misfit)
+     case ("WD")
         if(DISPLAY_DETAILS) print*, 'WD (waveform-difference) misfit (s-d)'
-        call WD_misfit(d,s,NSTEP,deltat,ntstart,ntend,&
-            window_type,compute_adjoint,&
-            adj,num,misfit)
+        call WD_misfit(d,s,NSTEP,deltat,f0,tstart,tend,taper_percentage,taper_type, &
+            compute_adjoint,adj,num,misfit)
     case ("ET")
         if(DISPLAY_DETAILS) print*, 'ET (envelope cc-traveltime) misfit (s-d)'
-        call ET_misfit(d,s,NSTEP,deltat,f0,ntstart,ntend,&
-            window_type,compute_adjoint,&
-            adj,num,misfit)
+        call ET_misfit(d,s,NSTEP,deltat,f0,tstart,tend,taper_percentage,taper_type, &
+            compute_adjoint,adj,num,misfit)
     case ("ED")
         if(DISPLAY_DETAILS) print*, 'ED (envelope-difference) misfit (s-d)'
-        call ED_misfit(d,s,NSTEP,deltat,ntstart,ntend,&
-            window_type,compute_adjoint,&
-            adj,num,misfit)
+        call ED_misfit(d,s,NSTEP,deltat,f0,tstart,tend,taper_percentage,taper_type, &
+            compute_adjoint,adj,num,misfit)
     case ("IP")
         if(DISPLAY_DETAILS) print*, 'IP (instantaneous phase) misfit (s-d)'
-        call IP_misfit(d,s,NSTEP,deltat,ntstart,ntend,&
-            window_type,compute_adjoint,&
-            adj,num,misfit)
+        call IP_misfit(d,s,NSTEP,deltat,f0,tstart,tend,taper_percentage,taper_type, &
+            compute_adjoint,adj,num,misfit)
     case ("MT")
         if(DISPLAY_DETAILS) print*, 'MT (multitaper traveltime) misfit (d-s)'
-        call MT_misfit(d,s,NSTEP,deltat,f0,ntstart,ntend,&
-            window_type,'MT',compute_adjoint,&
-            adj,num,misfit)
+        call MT_misfit(d,s,NSTEP,deltat,f0,tstart,tend,taper_percentage,taper_type, &
+            'MT',compute_adjoint,adj,num,misfit)
     case ("MA")
         if(DISPLAY_DETAILS) print*, 'MA (multitaper amplitude) misfit (d-s)'
-        call MT_misfit(d,s,NSTEP,deltat,f0,ntstart,ntend,&
-            window_type,'MA',compute_adjoint,&
-            adj,num,misfit)
+    call MT_misfit(d,s,NSTEP,deltat,f0,tstart,tend,taper_percentage,taper_type, &
+            'MA',compute_adjoint,adj,num,misfit)
     case default
         print*, 'measurement_type must be among "CC"/"WD"/"ET"/"ED"/"IP"/"MT"/"MA"/...';
         stop
@@ -69,10 +66,10 @@ subroutine misfit_adj_AD(measurement_type,d,s,NSTEP,deltat,f0,ntstart,ntend,&
 end subroutine misfit_adj_AD
 !------------------------------------------------------------------------
 subroutine misfit_adj_DD(measurement_type,d,d_ref,s,s_ref,NSTEP,deltat,f0,&
-        ntstart,ntend,ntstart_ref,ntend_ref,window_type,compute_adjoint,&
+        tstart,tend,tstart_ref,tend_ref,taper_percentage,taper_type,compute_adjoint,&
         adj,adj_ref,num,misfit)
-    !! relative way to do tomography, 
-    !! using double-difference measurements of data(d) and ref data(d_ref);
+    !! double-difference tomography, 
+    !! using differential measurements of data(d) and ref data(d_ref);
     !! syn (s) and ref syn(s_ref)
     use constants
     implicit none
@@ -81,7 +78,10 @@ subroutine misfit_adj_DD(measurement_type,d,d_ref,s,s_ref,NSTEP,deltat,f0,&
     character(len=2), intent(in) :: measurement_type
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d,s,d_ref,s_ref
     real(kind=CUSTOM_REAL), intent(in) :: deltat,f0
-    integer, intent(in) :: NSTEP,ntstart,ntend,ntstart_ref,ntend_ref,window_type
+    integer, intent(in) :: NSTEP
+    real(kind=CUSTOM_REAL), intent(in) :: tstart,tend,tstart_ref,tend_ref
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
     logical, intent(in) :: compute_adjoint
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
@@ -91,36 +91,39 @@ subroutine misfit_adj_DD(measurement_type,d,d_ref,s,s_ref,NSTEP,deltat,f0,&
     adj(1:NSTEP)=0.d0
     adj_ref(1:NSTEP)=0.d0
     num=1
+    misfit=0.0
 
     select case (measurement_type)
     case ("CC")
         if(DISPLAY_DETAILS) print*, '*** Double-difference CC (traveltime) misfit'
         call CC_misfit_DD(d,d_ref,s,s_ref,NSTEP,deltat,&
-            ntstart,ntend,ntstart_ref,ntend_ref,window_type,compute_adjoint,&
-            adj,adj_ref,num,misfit)
+        tstart,tend,tstart_ref,tend_ref,&
+        taper_percentage,taper_type,&
+        compute_adjoint,&
+        adj,adj_ref,num,misfit)
     case ("WD")
         if(DISPLAY_DETAILS) print*, '*** Double-difference WD (waveform) misfit'
         call WD_misfit_DD(d,d_ref,s,s_ref,NSTEP,deltat,&
-            ntstart,ntend,ntstart_ref,ntend_ref,window_type,compute_adjoint,&
-            adj,adj_ref,num,misfit)
+        tstart,tend,tstart_ref,tend_ref,&
+        taper_percentage,taper_type,&
+        compute_adjoint,&
+        adj,adj_ref,num,misfit)
     case ("IP")
         if(DISPLAY_DETAILS) print*, '*** Double-difference IP (instantaneous) misfit'
         call IP_misfit_DD(d,d_ref,s,s_ref,NSTEP,deltat,&
-            ntstart,ntend,ntstart_ref,ntend_ref,window_type,compute_adjoint,&
-            adj,adj_ref,num,misfit)
+        tstart,tend,tstart_ref,tend_ref,&
+        taper_percentage,taper_type,&
+        compute_adjoint,&
+        adj,adj_ref,num,misfit)
     case ("MT")
         if(DISPLAY_DETAILS) print*, '*** Double-difference MT (multitaper) misfit'
         call MT_misfit_DD(d,d_ref,s,s_ref,NSTEP,deltat,f0,&
-            ntstart,ntend,ntstart_ref,ntend_ref,window_type,'MT',compute_adjoint,&
-            adj,adj_ref,num,misfit)
-    case ("MA")
-        if(DISPLAY_DETAILS) print*, '*** Double-difference MA (multitaper) misfit'
-        call MT_misfit_DD(d,d_ref,s,s_ref,NSTEP,deltat,f0,&
-            ntstart,ntend,ntstart_ref,ntend_ref,window_type,'MT',compute_adjoint,&
-            adj,adj_ref,num,misfit)
-
+        tstart,tend,tstart_ref,tend_ref,&
+        taper_percentage,taper_type,&
+        'MT',compute_adjoint,&
+        adj,adj_ref,num,misfit)
     case default
-        print*, 'measurement_type must be among CC/WD/IP/MT/MA ...';
+        print*, 'measurement_type must be among CC/WD/IP/MT ...';
         stop
 
     end select
@@ -131,7 +134,7 @@ end subroutine misfit_adj_DD
 !----------------------------------------------------------------------
 !---------------subroutines for misfit_adjoint-------------------------
 !-----------------------------------------------------------------------
-subroutine WD_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint,&
+subroutine WD_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,compute_adjoint,&
         adj,num,misfit)
     !! waveform difference between d and s
 
@@ -140,9 +143,11 @@ subroutine WD_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
 
     ! inputs & outputs 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d,s
-    real(kind=CUSTOM_REAL), intent(in) :: deltat
-    integer, intent(in) :: i_tstart, i_tend 
-    integer, intent(in) :: npts,window_type
+    real(kind=CUSTOM_REAL), intent(in) :: deltat,f0
+    real(kind=CUSTOM_REAL), intent(in) :: tstart,tend
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
+    integer, intent(in) :: npts
     logical, intent(in) :: compute_adjoint
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
@@ -150,26 +155,34 @@ subroutine WD_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
 
     ! index 
     integer :: i
+
+    ! error
     real(kind=CUSTOM_REAL) :: const, err_WD
 
     ! window
     integer :: nlen
+    integer :: i_tstart, i_tend
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas
     real(kind=CUSTOM_REAL), dimension(npts) :: d_tw,s_tw
+
     ! adjoint
     real(kind=CUSTOM_REAL), dimension(npts) ::  adj_tw
 
     !! window
-    call cc_window(s,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,s_tw)
-    call cc_window(d,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,d_tw)
-    if(nlen<1 .or. nlen>npts) print*,'check nlen ',nlen
+    nlen=floor((tend-tstart)/deltat)+1
+    if(nlen<1 .or. nlen>npts) print*,'nlen'
+    i_tstart=max(floor(tstart / deltat), 1)
+    i_tend = min(i_tstart+nlen-1, npts)
+    allocate(tas(nlen))
+    call window_taper(nlen,taper_percentage,taper_type,tas)
+    s_tw(1:nlen)=tas(1:nlen)*s(i_tstart:i_tend)
+    d_tw(1:nlen)=tas(1:nlen)*d(i_tstart:i_tend)
 
     !! WD misfit
     const=1.0
     err_WD=1.0
-    if(NORMALIZE) then
-        const = sqrt(sum(d_tw(1:nlen)**2)*deltat)
-        err_WD=err_WD*const
-    endif
+    const = sqrt(sum(d_tw(1:nlen)**2)*deltat)
+    err_WD=err_WD*const
     do i=1,nlen 
     write(IOUT,*) (s_tw(i)-d_tw(i))*sqrt(deltat)/err_WD
     enddo
@@ -198,7 +211,8 @@ subroutine WD_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
         adj_tw(1:nlen) =  (s_tw(1:nlen)-d_tw(1:nlen))/err_WD**2
 
         ! reverse window and taper again 
-        call cc_window_inverse(adj_tw,npts,window_type,i_tstart,i_tend,0,0.d0,adj)
+        adj(i_tstart:i_tend)=tas(1:nlen)*adj_tw(1:nlen)
+        deallocate(tas)
 
         if( DISPLAY_DETAILS) then
             open(1,file=trim(output_dir)//'/adj_WD',status='unknown')
@@ -212,7 +226,7 @@ subroutine WD_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
 
 end subroutine WD_misfit
 !-----------------------------------------------------------------------
-subroutine CC_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,compute_adjoint,&
+subroutine CC_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,compute_adjoint,&
         adj,num,misfit)
     !! CC traveltime shift between d and s
 
@@ -222,8 +236,10 @@ subroutine CC_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,compute_adj
     ! inputs & outputs 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d,s
     real(kind=CUSTOM_REAL), intent(in) :: deltat,f0
-    integer, intent(in) :: i_tstart, i_tend
-    integer, intent(in) :: npts,window_type
+    real(kind=CUSTOM_REAL), intent(in) :: tstart,tend
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
+    integer, intent(in) :: npts
     logical, intent(in) :: compute_adjoint
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
@@ -234,20 +250,31 @@ subroutine CC_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,compute_adj
 
     ! window
     integer :: nlen
+    integer :: i_tstart, i_tend
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas
     real(kind=CUSTOM_REAL), dimension(npts) :: d_tw,s_tw 
+
     ! cc 
     integer :: ishift
     real(kind=CUSTOM_REAL) :: tshift, dlnA, cc_max
     real(kind=CUSTOM_REAL) :: err_dt_cc,err_dlnA_cc
+
+    ! error
     real(kind=CUSTOM_REAL) :: const, err_CC
+
     ! adjoint
     real(kind=CUSTOM_REAL) :: Mtr
     real(kind=CUSTOM_REAL), dimension(npts) :: s_tw_vel, adj_tw 
 
     !! window
-    call cc_window(s,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,s_tw)
-    call cc_window(d,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,d_tw)
-    if(nlen<1 .or. nlen>npts) print*,'check i_start,i_tend, nlen ',i_tstart,i_tend,nlen
+    nlen=floor((tend-tstart)/deltat)+1 
+    if(nlen<1 .or. nlen>npts) print*,'nlen'
+    i_tstart=max(floor(tstart / deltat), 1)
+    i_tend = min(i_tstart+nlen-1, npts)
+    allocate(tas(nlen))
+    call window_taper(nlen,taper_percentage,taper_type,tas)
+    s_tw(1:nlen)=tas(1:nlen)*s(i_tstart:i_tend)
+    d_tw(1:nlen)=tas(1:nlen)*d(i_tstart:i_tend)
 
     !! CC misfit
     call xcorr_calc(s_tw,d_tw,npts,1,nlen,ishift,dlnA,cc_max) ! T(s-d)
@@ -294,8 +321,8 @@ subroutine CC_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,compute_adj
         adj_tw(1:nlen)=  tshift*s_tw_vel(1:nlen)/Mtr/err_CC**2 
 
         ! reverse window and taper again 
-        call cc_window_inverse(adj_tw,npts,window_type,i_tstart,i_tend,0,0.d0,adj)
-
+        adj(i_tstart:i_tend)=tas(1:nlen)*adj_tw(1:nlen)
+        deallocate(tas)
 
         if( DISPLAY_DETAILS) then
             open(1,file=trim(output_dir)//'/adj_CC',status='unknown')
@@ -309,7 +336,7 @@ subroutine CC_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,compute_adj
 
 end subroutine CC_misfit
 ! -----------------------------------------------------------------------
-subroutine ET_misfit(d,s,npts,deltat,f0,i_tstart,i_tend,window_type,compute_adjoint,&
+subroutine ET_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,compute_adjoint,&
         adj,num,misfit)
     !! Envelope time shift between d and s
 
@@ -319,25 +346,33 @@ subroutine ET_misfit(d,s,npts,deltat,f0,i_tstart,i_tend,window_type,compute_adjo
 
     ! inputs & outputs 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d,s
+    integer, intent(in) :: npts
     real(kind=CUSTOM_REAL), intent(in) :: deltat,f0
-    integer, intent(in) :: i_tstart,i_tend
-    integer, intent(in) :: npts, window_type
+    real(kind=CUSTOM_REAL), intent(in) :: tstart,tend
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
     logical, intent(in) :: compute_adjoint
+    real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
-    real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
 
     ! window
     integer :: nlen
+    integer :: i_tstart, i_tend
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas
     real(kind=CUSTOM_REAL), dimension(npts) :: d_tw,s_tw
+
+    ! index
+    integer :: i
+
+    ! error    
     real(kind=CUSTOM_REAL) :: const, err_ET
 
-    ! for hilbert transformation
+    ! hilbert transformation
     real(kind=CUSTOM_REAL) :: epslon
     real(kind=CUSTOM_REAL), dimension(npts) :: E_d,E_s,E_ratio,hilbt_ratio,hilbt_d,hilbt_s
 
     ! adjoint
-    integer :: i
     real(kind=CUSTOM_REAL), dimension(npts) :: adj_tw
     real(kind=CUSTOM_REAL), dimension(npts) :: seism_vel
     real(kind=CUSTOM_REAL) :: Mtr
@@ -347,9 +382,14 @@ subroutine ET_misfit(d,s,npts,deltat,f0,i_tstart,i_tend,window_type,compute_adjo
     real(kind=CUSTOM_REAL) :: tshift, dlnA, cc_max
 
     !! window
-    call cc_window(s,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,s_tw)
-    call cc_window(d,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,d_tw)
-    if(nlen<1 .or. nlen>npts) print*,'check nlen ',nlen
+    nlen=floor((tend-tstart)/deltat)+1
+    if(nlen<1 .or. nlen>npts) print*,'nlen'
+    i_tstart=max(floor(tstart / deltat), 1)
+    i_tend = min(i_tstart+nlen-1, npts)
+    allocate(tas(nlen))
+    call window_taper(nlen,taper_percentage,taper_type,tas)
+    s_tw(1:nlen)=tas(1:nlen)*s(i_tstart:i_tend)
+    d_tw(1:nlen)=tas(1:nlen)*d(i_tstart:i_tend)
 
     !! Envelope time_shift misfit
     ! initialization 
@@ -435,7 +475,8 @@ subroutine ET_misfit(d,s,npts,deltat,f0,i_tstart,i_tend,window_type,compute_adjo
         endif
 
         ! reverse window and taper again 
-        call cc_window_inverse(adj_tw,npts,window_type,i_tstart,i_tend,0,0.d0,adj)
+        adj(i_tstart:i_tend)=tas(1:nlen)*adj_tw(1:nlen)
+        deallocate(tas)
 
         if( DISPLAY_DETAILS) then
             open(1,file=trim(output_dir)//'/adj_ET',status='unknown')
@@ -449,7 +490,7 @@ subroutine ET_misfit(d,s,npts,deltat,f0,i_tstart,i_tend,window_type,compute_adjo
 
 end subroutine ET_misfit
 !-----------------------------------------------------------------------
-subroutine ED_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint,&
+subroutine ED_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,compute_adjoint,&
         adj,num,misfit)
     !! Envelope difference between d and s
 
@@ -459,30 +500,44 @@ subroutine ED_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
 
     ! inputs & outputs 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d,s
-    real(kind=CUSTOM_REAL), intent(in) :: deltat
-    integer, intent(in) :: i_tstart,i_tend
-    integer, intent(in) :: npts, window_type
+    integer, intent(in) :: npts
+    real(kind=CUSTOM_REAL), intent(in) :: deltat,f0
+    real(kind=CUSTOM_REAL), intent(in) :: tstart,tend
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
     logical, intent(in) :: compute_adjoint
+    real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
-    real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
+
+    ! index 
+    integer :: i
+
+    ! error 
     real(kind=CUSTOM_REAL) :: const, err_ED
+ 
     ! window
     integer :: nlen
+    integer :: i_tstart, i_tend
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas
     real(kind=CUSTOM_REAL), dimension(npts) :: d_tw,s_tw
 
-    ! for hilbert transformation
+    ! hilbert transformation
     real(kind=CUSTOM_REAL) :: epslon
     real(kind=CUSTOM_REAL), dimension(npts) :: E_d,E_s,E_ratio,hilbt_ratio,hilbt_d,hilbt_s
 
     ! adjoint
-    integer :: i
     real(kind=CUSTOM_REAL), dimension(npts) :: adj_tw
 
     !! window
-    call cc_window(s,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,s_tw)
-    call cc_window(d,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,d_tw)
-    if(nlen<1 .or. nlen>npts) print*,'check nlen ',nlen
+    nlen=floor((tend-tstart)/deltat)+1
+    if(nlen<1 .or. nlen>npts) print*,'nlen'
+    i_tstart=max(floor(tstart / deltat), 1)
+    i_tend = min(i_tstart+nlen-1, npts)
+    allocate(tas(nlen))
+    call window_taper(nlen,taper_percentage,taper_type,tas)
+    s_tw(1:nlen)=tas(1:nlen)*s(i_tstart:i_tend)
+    d_tw(1:nlen)=tas(1:nlen)*d(i_tstart:i_tend)
 
     !! Envelope difference misfit
     ! initialization 
@@ -560,7 +615,8 @@ subroutine ED_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
         endif
 
         ! reverse window and taper again 
-        call cc_window_inverse(adj_tw,npts,window_type,i_tstart,i_tend,0,0.d0,adj)
+        adj(i_tstart:i_tend)=tas(1:nlen)*adj_tw(1:nlen)
+        deallocate(tas)
 
         if( DISPLAY_DETAILS) then
             open(1,file=trim(output_dir)//'/adj_ED',status='unknown')
@@ -574,7 +630,7 @@ subroutine ED_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
 
 end subroutine ED_misfit
 !-----------------------------------------------------------------------
-subroutine IP_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint,&
+subroutine IP_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,compute_adjoint,&
         adj,num,misfit)
     !! Instantaneous phase difference between d and s (need to be fixed)
 
@@ -584,41 +640,47 @@ subroutine IP_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
 
     ! inputs & outputs 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d,s
-    real(kind=CUSTOM_REAL), intent(in) :: deltat
-    integer, intent(in) :: i_tstart,i_tend
-    integer, intent(in) :: npts, window_type
+    integer, intent(in) :: npts
+    real(kind=CUSTOM_REAL), intent(in) :: deltat,f0
+    real(kind=CUSTOM_REAL), intent(in) :: tstart,tend
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
     logical, intent(in) :: compute_adjoint
+    real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
-    real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
 
     ! index 
     integer :: i
 
     ! window
     integer :: nlen
+    integer :: i_tstart, i_tend
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas
     real(kind=CUSTOM_REAL), dimension(npts) :: d_tw,s_tw
 
-    ! for hilbert transformation
+    ! hilbert transformation
     real(kind=CUSTOM_REAL) :: wtr_d, wtr_s
     real(kind=CUSTOM_REAL), dimension(npts) :: E_d,E_s,E_ratio,hilbt_ratio
     real(kind=CUSTOM_REAL), dimension(npts) :: norm_s, norm_d
     real(kind=CUSTOM_REAL), dimension(npts) :: hilbt_d, hilbt_s, real_diff, imag_diff
 
-    real(kind=CUSTOM_REAL) :: tas(npts)
+    ! error
     real(kind=CUSTOM_REAL) :: const, err_IP
 
     ! adjoint
     real(kind=CUSTOM_REAL), dimension(npts) :: adj_tw
 
     !! window
-    call cc_window(s,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,s_tw)
-    call cc_window(d,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,d_tw)
+    nlen=floor((tend-tstart)/deltat)+1
+    if(nlen<1 .or. nlen>npts) print*,'nlen'
+    i_tstart=max(floor(tstart / deltat), 1)
+    i_tend = min(i_tstart+nlen-1, npts)
+    allocate(tas(nlen))
+    call window_taper(nlen,taper_percentage,taper_type,tas)
+    s_tw(1:nlen)=tas(1:nlen)*s(i_tstart:i_tend)
+    d_tw(1:nlen)=tas(1:nlen)*d(i_tstart:i_tend)
     
-    if(nlen<1 .or. nlen>npts) print*,'check nlen ',nlen
-
-    !tas(1:npts)=0.d0
-    !call window(npts,1,nlen,window_type,tas)
     !! Instantaneous phase misfit
     ! initialization 
     real_diff(:) = 0.0
@@ -629,8 +691,6 @@ subroutine IP_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     hilbt_ratio (:) = 0.0
     hilbt_d(:)=0.0
     hilbt_s(:)=0.0
-
-    !! be careful about phase measurement -- cycle-skipping
 
     !! hilbert for obs
     hilbt_d(1:nlen)=d_tw(1:nlen)
@@ -649,8 +709,8 @@ subroutine IP_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
     !! diff for real & imag part
     norm_s=sqrt((s_tw(1:nlen)/(E_s(1:nlen)+wtr_s))**2+(hilbt_s(1:nlen)/(E_s(1:nlen)+wtr_s))**2)
     norm_d=sqrt((d_tw(1:nlen)/(E_d(1:nlen)+wtr_d))**2+(hilbt_d(1:nlen)/(E_d(1:nlen)+wtr_d))**2)
-    real_diff= (s_tw(1:nlen)/(E_s(1:nlen)+wtr_s) - d_tw(1:nlen)/(E_d(1:nlen)+wtr_d)) !*tas(1:nlen)
-    imag_diff= (hilbt_s(1:nlen)/(E_s(1:nlen)+wtr_s) - hilbt_d(1:nlen)/(E_d(1:nlen)+wtr_d)) !*tas(1:nlen)
+    real_diff= (s_tw(1:nlen)/(E_s(1:nlen)+wtr_s) - d_tw(1:nlen)/(E_d(1:nlen)+wtr_d)) 
+    imag_diff= (hilbt_s(1:nlen)/(E_s(1:nlen)+wtr_s) - hilbt_d(1:nlen)/(E_d(1:nlen)+wtr_d)) 
 
     ! IP misfit
     const=1.0
@@ -698,7 +758,8 @@ subroutine IP_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
         adj_tw(1:nlen)=(E_ratio(1:nlen) + hilbt_ratio)/err_IP**2
 
         ! reverse window and taper again 
-        call cc_window_inverse(adj_tw,npts,window_type,i_tstart,i_tend,0,0.d0,adj)
+        adj(i_tstart:i_tend)=tas(1:nlen)*adj_tw(1:nlen)
+        deallocate(tas)
 
         if(DISPLAY_DETAILS) then
             open(1,file=trim(output_dir)//'/adj_IP',status='unknown')
@@ -712,8 +773,9 @@ subroutine IP_misfit(d,s,npts,deltat,i_tstart,i_tend,window_type,compute_adjoint
 
 end subroutine IP_misfit
 !-----------------------------------------------------------------------
-subroutine MT_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,misfit_type,&
-        compute_adjoint,adj,num,misfit)
+subroutine MT_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type,&
+        misfit_type,compute_adjoint,&
+        adj,num,misfit)
     !! MT between d and s (d-s) 
 
     use constants
@@ -721,20 +783,26 @@ subroutine MT_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,misfit_type
 
     ! inputs & outputs 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d,s
+    integer, intent(in) :: npts
     real(kind=CUSTOM_REAL), intent(in) :: deltat,f0
-    integer, intent(in) :: i_tstart,i_tend
-    integer, intent(in) :: npts,window_type
+    real(kind=CUSTOM_REAL), intent(in) :: tstart,tend
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
     logical, intent(in) :: compute_adjoint
+    real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
-    real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj
     character(len=2), intent(in) :: misfit_type
 
     ! index
     integer :: i,j
+    
     ! window
     integer :: nlen
-    real(kind=CUSTOM_REAL), dimension(npts) :: d_tw,s_tw, d_tw_cc
+    integer :: i_tstart, i_tend
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas
+    real(kind=CUSTOM_REAL), dimension(npts) :: d_tw,s_tw,d_tw_cc
+
     ! cc 
     integer :: ishift
     real(kind=CUSTOM_REAL) :: tshift, dlnA, cc_max
@@ -746,10 +814,6 @@ subroutine MT_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,misfit_type
 
     ! mt 
     integer :: i_fstart, i_fend
-    !  real(kind=CUSTOM_REAL) ::B,W, NW
-    !  integer :: ntaper,mtaper
-    !  real(kind=CUSTOM_REAL), dimension(NPT) :: eigens, ey2
-    !  real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: tas
     real(kind=CUSTOM_REAL), dimension(NPT) :: dtau_w, dlnA_w,err_dtau_mt,err_dlnA_mt
     complex(CUSTOM_REAL), dimension(NPT) :: trans_func
 
@@ -757,12 +821,19 @@ subroutine MT_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,misfit_type
     real(kind=CUSTOM_REAL), dimension(npts) :: adj_p_tw,adj_q_tw
 
     !! window
-    ishift = 0 
-    dlnA = 0.0
-    call cc_window(s,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,s_tw)
-    call cc_window(d,npts,window_type,i_tstart,i_tend,0,0.d0,nlen,d_tw)
-    if(nlen<1 .or. nlen>npts) print*,'check nlen ',nlen
+    nlen=floor((tend-tstart)/deltat)+1
+    if(nlen<1 .or. nlen>npts) print*,'nlen'
+    i_tstart=max(floor(tstart / deltat), 1)
+    i_tend = min(i_tstart+nlen-1, npts)
+    allocate(tas(nlen))
+    call window_taper(nlen,taper_percentage,taper_type,tas)
+    s_tw(1:nlen)=tas(1:nlen)*s(i_tstart:i_tend)
+    d_tw(1:nlen)=tas(1:nlen)*d(i_tstart:i_tend)
+   
+    !!   find the relaible frequency limit
+    call frequency_limit(s_tw,nlen,deltat,f0/2.5,f0*2.5,i_fstart,i_fend)
 
+    if(i_fstart<i_fend) then  !MT measurement
     !! cc correction
     call xcorr_calc(d_tw,s_tw,npts,1,nlen,ishift,dlnA,cc_max) ! T(d-s)
     tshift= ishift*deltat
@@ -782,9 +853,8 @@ subroutine MT_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,misfit_type
 
     ! correction for d using negative cc
     ! fixed window for s, correct the window for d
-    !dlnA =0.0
-    ! call cc_window(d,npts,window_type,i_tstart,i_tend,-ishift,-dlnA,nlen,d_tw_cc)
-    call cc_window(d,npts,window_type,i_tstart,i_tend,-ishift,0.0,nlen,d_tw_cc)
+    call cc_window(d,npts,i_tstart,i_tend,-ishift,0.0,d_tw_cc)
+    d_tw_cc(1:nlen)=tas(1:nlen)*d_tw_cc(1:nlen)
 
     if( DISPLAY_DETAILS) then
         print*
@@ -816,11 +886,6 @@ subroutine MT_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,misfit_type
     endif
     enddo
     fvec = wvec / TWOPI
-
-    !!   find the relaible frequency limit
-    call frequency_limit(s_tw,nlen,deltat,i_fstart,i_fend) ! limit from spectra
-    i_fend = min(i_fend, floor(1.0/(2*deltat)/df)+1,floor(f0*2.5/df)+1)  ! not exceeding the sampling rate
-    i_fstart = max(i_fstart,ceiling(3.0/(nlen*deltat)/df)+1,ceiling(f0/2.5/df)+1) ! include at least 5 cyles in window
 
     if( DISPLAY_DETAILS) then
         print*
@@ -882,10 +947,12 @@ subroutine MT_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,misfit_type
 
         ! inverse window and taper again 
         if(misfit_type=='MT') then
-            call cc_window_inverse(adj_p_tw,npts,window_type,i_tstart,i_tend,0,0.d0,adj)
+            adj(i_tstart:i_tend)=tas(1:nlen)*adj_p_tw(1:nlen)
         elseif(misfit_type=='MA') then
-            call cc_window_inverse(adj_q_tw,npts,window_type,i_tstart,i_tend,0,0.d0,adj)
+            adj(i_tstart:i_tend)=tas(1:nlen)*adj_q_tw(1:nlen)
         endif
+        deallocate(tas)
+
         if( DISPLAY_DETAILS) then
             open(1,file=trim(output_dir)//'/adj_MT',status='unknown')
             do  i =  i_tstart,i_tend
@@ -897,13 +964,18 @@ subroutine MT_misfit(d,s,npts,deltat,f0,i_tstart, i_tend,window_type,misfit_type
 
     endif
 
-    !deallocate (tas)
+   else ! CC adj
+       if(DISPLAY_DETAILS) print*, 'CC (traveltime) misfit (s-d)'
+        call CC_misfit(d,s,npts,deltat,f0,tstart,tend,taper_percentage,taper_type, &
+            compute_adjoint,adj,num,misfit)
+    endif
 
 end subroutine MT_misfit
 ! -----------------------------------------------------------------------
 subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
-        i_tstart1,i_tend1,i_tstart2,i_tend2,&
-        window_type,compute_adjoint,&
+        tstart1,tend1,tstart2,tend2,&
+        taper_percentage,taper_type,&
+        compute_adjoint,&
         adj1,adj2,num,misfit)
     !! CC traveltime double difference
 
@@ -913,25 +985,31 @@ subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     ! inputs & outputs 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d1,d2,s1,s2
     real(kind=CUSTOM_REAL), intent(in) :: deltat
-    integer, intent(in) :: i_tstart1,i_tend1,i_tstart2,i_tend2
-    integer, intent(in) :: npts,window_type
+    real(kind=CUSTOM_REAL), intent(in) :: tstart1,tend1,tstart2,tend2
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
+    integer, intent(in) :: npts
     logical, intent(in) :: compute_adjoint
     real(kind=CUSTOM_REAL) :: cc_max_syn,cc_max_obs
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
     real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj1,adj2
-    real(kind=CUSTOM_REAL) :: const, err_DD_CC
+
     ! index
     integer :: i
 
     ! window
     integer :: nlen1,nlen2,nlen
+    integer :: i_tstart1,i_tend1,i_tstart2,i_tend2
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas1,tas2
     real(kind=CUSTOM_REAL), dimension(npts) :: d1_tw,d2_tw,s1_tw,s2_tw
     ! cc 
     integer :: ishift_obs,ishift_syn
     real(kind=CUSTOM_REAL) :: tshift_obs,tshift_syn
     real(kind=CUSTOM_REAL) :: dlnA_obs,dlnA_syn
     real(kind=CUSTOM_REAL) :: ddtshift_cc,ddlnA_cc
+    real(kind=CUSTOM_REAL) :: const, err_DD_CC
+
     ! adjoint
     real(kind=CUSTOM_REAL) :: Mtr
     real(kind=CUSTOM_REAL), dimension(npts) :: s1_tw_cc,s2_tw_cc
@@ -939,13 +1017,33 @@ subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     real(kind=CUSTOM_REAL), dimension(npts) :: adj1_tw,adj2_tw
 
     !! window
-    call cc_window(d1,npts,window_type,i_tstart1,i_tend1,0,0.d0,nlen1,d1_tw)
-    call cc_window(s1,npts,window_type,i_tstart1,i_tend1,0,0.d0,nlen1,s1_tw)
-    call cc_window(d2,npts,window_type,i_tstart2,i_tend2,0,0.d0,nlen2,d2_tw)
-    call cc_window(s2,npts,window_type,i_tstart2,i_tend2,0,0.d0,nlen2,s2_tw)
-    if(nlen1<1 .or. nlen1>npts) print*,'check nlen1 ',nlen1
-    if(nlen2<1 .or. nlen2>npts) print*,'check nlen2 ',nlen2
-    nlen = max(nlen1,nlen2)
+    nlen1=floor((tend1-tstart1)/deltat)+1
+    if(nlen1<1 .or. nlen1>npts) then
+        print*,'check nlen1 ',nlen1
+        stop
+    endif
+    i_tstart1=max(floor(tstart1 / deltat), 1)
+    i_tend1 = min(i_tstart1+nlen1-1, npts)
+    nlen1=i_tend1-i_tstart1+1
+    allocate(tas1(nlen1))
+    call window_taper(nlen1,taper_percentage,taper_type,tas1)
+    s1_tw(1:nlen1)=tas1(1:nlen1)*s1(i_tstart1:i_tend1)
+    d1_tw(1:nlen1)=tas1(1:nlen1)*d1(i_tstart1:i_tend1)
+
+    nlen2=floor((tend2-tstart2)/deltat)+1
+    if(nlen2<1 .or. nlen2>npts) then
+        print*,'check nlen2 ',nlen2
+        stop
+    endif
+    i_tstart2=max(floor(tstart2 / deltat), 1)
+    i_tend2 = min(i_tstart2+nlen2-1, npts)
+    nlen2=i_tend2-i_tstart2+1
+    allocate(tas2(nlen2))
+    call window_taper(nlen2,taper_percentage,taper_type,tas2)
+    s2_tw(1:nlen2)=tas2(1:nlen2)*s2(i_tstart2:i_tend2)
+    d2_tw(1:nlen2)=tas2(1:nlen2)*d2(i_tstart2:i_tend2)
+
+    nlen=max(nlen1,nlen2)
 
     !! DD cc-misfit
     call xcorr_calc(d1_tw,d2_tw,npts,1,nlen,ishift_obs,dlnA_obs,cc_max_obs) ! T(d1-d2)
@@ -1000,9 +1098,13 @@ subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         adj2(1:npts) = 0.0
 
         ! cc-shift s2
-        call cc_window(s2,npts,window_type,i_tstart2,i_tend2,ishift_syn,0.d0,nlen2,s2_tw_cc)
+        call cc_window(s2,npts,i_tstart2,i_tend2,ishift_syn,0.0,s2_tw_cc)
+        s2_tw_cc(1:nlen2)=tas2(1:nlen2)*s2_tw_cc(1:nlen2)
+
         ! inverse cc-shift s1
-        call cc_window(s1,npts,window_type,i_tstart1,i_tend1,-ishift_syn,0.d0,nlen1,s1_tw_cc)
+        call cc_window(s1,npts,i_tstart1,i_tend1,-ishift_syn,0.0,s1_tw_cc)
+        s1_tw_cc(1:nlen1)=tas1(1:nlen1)*s1_tw_cc(1:nlen1)
+
         if( DISPLAY_DETAILS) then
             open(1,file=trim(output_dir)//'/syn1_cc',status='unknown')
             open(2,file=trim(output_dir)//'/syn2_cc',status='unknown')
@@ -1016,7 +1118,6 @@ subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
 
         ! computer velocity 
         call compute_vel(s1_tw,npts,deltat,nlen,s1_tw_vel)
-        ! call compute_vel(s2_tw,npts,deltat,nlen,s2_tw_vel)
         call compute_vel(s1_tw_cc,npts,deltat,nlen,s1_tw_cc_vel)
         call compute_vel(s2_tw_cc,npts,deltat,nlen,s2_tw_cc_vel)
 
@@ -1028,8 +1129,8 @@ subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         adj2_tw(1:nlen)= -ddtshift_cc * s1_tw_cc_vel(1:nlen)/Mtr/err_DD_CC**2
 
         ! reverse window and taper again 
-        call cc_window_inverse(adj1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)
-        call cc_window_inverse(adj2_tw,npts,window_type,i_tstart2,i_tend2,0,0.d0,adj2)
+        adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1_tw(1:nlen1)
+        adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2_tw(1:nlen2)
 
         if( DISPLAY_DETAILS) then
             open(1,file=trim(output_dir)//'/adj_win',status='unknown')
@@ -1045,14 +1146,16 @@ subroutine CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         endif
 
     endif
+    deallocate(tas1,tas2)
 
 end subroutine CC_misfit_DD
 !-----------------------------------------------------------------------
 subroutine WD_misfit_DD(d1,d2,s1,s2,npts,deltat,&
-        i_tstart1,i_tend1,i_tstart2,i_tend2,&
-        window_type,compute_adjoint,&
+        tstart1,tend1,tstart2,tend2,&
+        taper_percentage,taper_type,&
+        compute_adjoint,&
         adj1,adj2,num,misfit)
-    !! waveform difference between d and s
+    !! WD double difference
 
     use constants
     implicit none
@@ -1060,31 +1163,58 @@ subroutine WD_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     ! inputs & outputs 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d1,d2,s1,s2
     real(kind=CUSTOM_REAL), intent(in) :: deltat
-    integer, intent(in) :: i_tstart1,i_tend1,i_tstart2,i_tend2
-    integer, intent(in) :: npts,window_type
+    real(kind=CUSTOM_REAL), intent(in) :: tstart1,tend1,tstart2,tend2
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
+    integer, intent(in) :: npts
     logical, intent(in) :: compute_adjoint
+    real(kind=CUSTOM_REAL) :: cc_max_syn,cc_max_obs
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
     real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj1,adj2
-    real(kind=CUSTOM_REAL) :: const, err_DD_WD
 
     ! index
     integer :: i
+    real(kind=CUSTOM_REAL) :: const, err_DD_WD
 
     ! window
     integer :: nlen1,nlen2,nlen
+    integer :: i_tstart1,i_tend1,i_tstart2,i_tend2
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas1,tas2
     real(kind=CUSTOM_REAL), dimension(npts) :: d1_tw,d2_tw,s1_tw,s2_tw
+
     ! adjoint
     real(kind=CUSTOM_REAL), dimension(npts) :: adj1_tw,adj2_tw
 
     !! window
-    call cc_window(d1,npts,window_type,i_tstart1,i_tend1,0,0.d0,nlen1,d1_tw)
-    call cc_window(s1,npts,window_type,i_tstart1,i_tend1,0,0.d0,nlen1,s1_tw)
-    call cc_window(d2,npts,window_type,i_tstart2,i_tend2,0,0.d0,nlen2,d2_tw)
-    call cc_window(s2,npts,window_type,i_tstart2,i_tend2,0,0.d0,nlen2,s2_tw)
-    if(nlen1<1 .or. nlen1>npts) print*,'check nlen1 ',nlen1
-    if(nlen2<1 .or. nlen2>npts) print*,'check nlen2 ',nlen2
-    nlen = max(nlen1,nlen2)
+    nlen1=floor((tend1-tstart1)/deltat)+1
+    if(nlen1<1 .or. nlen1>npts) then
+        print*,'check nlen1 ',nlen1
+        stop
+    endif
+    i_tstart1=max(floor(tstart1 / deltat), 1)
+    i_tend1 = min(i_tstart1+nlen1-1, npts)
+    nlen1=i_tend1-i_tstart1+1
+    allocate(tas1(nlen1))
+    call window_taper(nlen1,taper_percentage,taper_type,tas1)
+    s1_tw(1:nlen1)=tas1(1:nlen1)*s1(i_tstart1:i_tend1)
+    d1_tw(1:nlen1)=tas1(1:nlen1)*d1(i_tstart1:i_tend1)
+
+    nlen2=floor((tend2-tstart2)/deltat)+1
+    if(nlen2<1 .or. nlen2>npts) then
+        print*,'check nlen2 ',nlen2
+        stop
+    endif
+    i_tstart2=max(floor(tstart2 / deltat), 1)
+    i_tend2 = min(i_tstart2+nlen2-1, npts)
+    nlen2=i_tend2-i_tstart2+1
+    allocate(tas2(nlen2))
+    call window_taper(nlen2,taper_percentage,taper_type,tas2)
+    s2_tw(1:nlen2)=tas2(1:nlen2)*s2(i_tstart2:i_tend2)
+    d2_tw(1:nlen2)=tas2(1:nlen2)*d2(i_tstart2:i_tend2)
+
+    nlen=max(nlen1,nlen2)
+
     ! DD WD misfit
     const=1.0            
     err_DD_WD=1.0
@@ -1119,18 +1249,19 @@ subroutine WD_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         adj1_tw(1:nlen)= ( (s1_tw(1:nlen)-s2_tw(1:nlen)) -(d1_tw(1:nlen)-d2_tw(1:nlen)) )/err_DD_WD**2
         adj2_tw(1:nlen)=  - adj1_tw(1:nlen)
 
-
         ! reverse window and taper again 
-        call cc_window_inverse(adj1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)
-        call cc_window_inverse(adj2_tw,npts,window_type,i_tstart2,i_tend2,0,0.d0,adj2)
+        adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1_tw(1:nlen1)
+        adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2_tw(1:nlen2)
 
     endif
+    deallocate(tas1,tas2)
 
 end subroutine WD_misfit_DD
 !----------------------------------------------------------------------
 subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
-        i_tstart1,i_tend1,i_tstart2,i_tend2,&
-        window_type,compute_adjoint,&
+        tstart1,tend1,tstart2,tend2,&
+        taper_percentage,taper_type,&
+        compute_adjoint,&
         adj1,adj2,num,misfit)
     !! Instantaneous phase double-difference
 
@@ -1139,23 +1270,28 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     implicit none
 
     ! inputs & outputs 
-    ! inputs & outputs 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d1,d2,s1,s2
     real(kind=CUSTOM_REAL), intent(in) :: deltat
-    integer, intent(in) :: i_tstart1,i_tend1,i_tstart2,i_tend2
-    integer, intent(in) :: npts,window_type
+    real(kind=CUSTOM_REAL), intent(in) :: tstart1,tend1,tstart2,tend2
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
+    integer, intent(in) :: npts
     logical, intent(in) :: compute_adjoint
+    real(kind=CUSTOM_REAL) :: cc_max_syn,cc_max_obs
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
     real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj1,adj2
-    real(kind=CUSTOM_REAL) :: const, err_DD_IP
 
     ! index
     integer :: i
+    real(kind=CUSTOM_REAL) :: const, err_DD_IP
 
     ! window
     integer :: nlen1,nlen2,nlen
+    integer :: i_tstart1,i_tend1,i_tstart2,i_tend2
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas1,tas2
     real(kind=CUSTOM_REAL), dimension(npts) :: d1_tw,d2_tw,s1_tw,s2_tw
+
     ! adjoint
     real(kind=CUSTOM_REAL), dimension(npts) :: adj1_tw,adj2_tw
 
@@ -1167,13 +1303,33 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
     real(kind=CUSTOM_REAL), dimension(npts) :: real_ddiff, imag_ddiff
 
     !! window
-    call cc_window(d1,npts,window_type,i_tstart1,i_tend1,0,0.d0,nlen1,d1_tw)
-    call cc_window(s1,npts,window_type,i_tstart1,i_tend1,0,0.d0,nlen1,s1_tw)
-    call cc_window(d2,npts,window_type,i_tstart2,i_tend2,0,0.d0,nlen2,d2_tw)
-    call cc_window(s2,npts,window_type,i_tstart2,i_tend2,0,0.d0,nlen2,s2_tw)
-    if(nlen1<1 .or. nlen1>npts) print*,'check nlen1 ',nlen1
-    if(nlen2<1 .or. nlen2>npts) print*,'check nlen2 ',nlen2
-    nlen = max(nlen1,nlen2)
+    nlen1=floor((tend1-tstart1)/deltat)+1
+    if(nlen1<1 .or. nlen1>npts) then
+        print*,'check nlen1 ',nlen1
+        stop
+    endif
+    i_tstart1=max(floor(tstart1 / deltat), 1)
+    i_tend1 = min(i_tstart1+nlen1-1, npts)
+    nlen1=i_tend1-i_tstart1+1
+    allocate(tas1(nlen1))
+    call window_taper(nlen1,taper_percentage,taper_type,tas1)
+    s1_tw(1:nlen1)=tas1(1:nlen1)*s1(i_tstart1:i_tend1)
+    d1_tw(1:nlen1)=tas1(1:nlen1)*d1(i_tstart1:i_tend1)
+
+    nlen2=floor((tend2-tstart2)/deltat)+1
+    if(nlen2<1 .or. nlen2>npts) then
+        print*,'check nlen2 ',nlen2
+        stop
+    endif
+    i_tstart2=max(floor(tstart2 / deltat), 1)
+    i_tend2 = min(i_tstart2+nlen2-1, npts)
+    nlen2=i_tend2-i_tstart2+1
+    allocate(tas2(nlen2))
+    call window_taper(nlen2,taper_percentage,taper_type,tas2)
+    s2_tw(1:nlen2)=tas2(1:nlen2)*s2(i_tstart2:i_tend2)
+    d2_tw(1:nlen2)=tas2(1:nlen2)*d2(i_tstart2:i_tend2)
+
+    nlen=max(nlen1,nlen2)
 
     ! initialization 
     real_ddiff(:) = 0.0
@@ -1267,28 +1423,33 @@ subroutine IP_misfit_DD(d1,d2,s1,s2,npts,deltat,&
         adj2_tw(1:nlen)=adj2_tw(1:nlen)/err_DD_IP**2
 
         ! reverse window and taper again 
-        call cc_window_inverse(adj1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)
-        call cc_window_inverse(adj2_tw,npts,window_type,i_tstart2,i_tend2,0,0.d0,adj2)
+        adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1_tw(1:nlen1)
+        adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2_tw(1:nlen2)
+
     endif
+    deallocate(tas1,tas2)
 
 end subroutine IP_misfit_DD
 !----------------------------------------------------------------------
 subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
-        i_tstart1,i_tend1,i_tstart2,i_tend2,&
-        window_type,misfit_type,compute_adjoint,&
+        tstart1,tend1,tstart2,tend2,&
+        taper_percentage,taper_type,&
+        misfit_type,compute_adjoint,&
         adj1,adj2,num,misfit)
     !! multitaper double-difference adjoint 
+
     use constants
     implicit none
 
     ! inputs & outputs 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d1,d2,s1,s2
     real(kind=CUSTOM_REAL), intent(in) :: deltat,f0
-    integer, intent(in) :: i_tstart1, i_tend1,i_tstart2,i_tend2
-    integer, intent(in) :: npts,window_type
+    real(kind=CUSTOM_REAL), intent(in) :: tstart1,tend1,tstart2,tend2
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
+    integer, intent(in) :: npts
     character(len=2), intent(in) :: misfit_type
     logical, intent(in) :: compute_adjoint
-    real(kind=CUSTOM_REAL) :: cc_max_syn,cc_max_obs
     integer, intent(out) :: num
     real(kind=CUSTOM_REAL), intent(out),optional :: misfit
     real(kind=CUSTOM_REAL), dimension(*),intent(out),optional :: adj1,adj2
@@ -1298,8 +1459,11 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
 
     ! window
     integer :: nlen1,nlen2,nlen
+    integer :: i_tstart1,i_tend1,i_tstart2,i_tend2
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas1,tas2
     real(kind=CUSTOM_REAL), dimension(npts) :: d1_tw,d2_tw,s1_tw,s2_tw
-    ! cc 
+    ! cc
+    real(kind=CUSTOM_REAL) :: cc_max_syn,cc_max_obs 
     integer :: ishift_obs,ishift_syn
     real(kind=CUSTOM_REAL) :: tshift_obs,tshift_syn
     real(kind=CUSTOM_REAL) :: dlnA_obs,dlnA_syn
@@ -1314,29 +1478,51 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
 
     ! mt 
     integer :: i_fstart1, i_fend1,i_fstart2, i_fend2,i_fstart, i_fend
-    !  real(kind=CUSTOM_REAL), dimension(NPT) :: eigens, ey2
-    !  real(kind=CUSTOM_REAL), dimension(:,:),allocatable :: tas
     real(kind=CUSTOM_REAL), dimension(NPT) :: dtau_w_obs,dtau_w_syn
     real(kind=CUSTOM_REAL), dimension(NPT) :: dlnA_w_obs, dlnA_w_syn
     real(kind=CUSTOM_REAL), dimension(NPT) :: ddtau_w, ddlnA_w
     real(kind=CUSTOM_REAL), dimension(NPT) :: err_dtau_mt_obs,err_dtau_mt_syn
     real(kind=CUSTOM_REAL), dimension(NPT) :: err_dlnA_mt_obs, err_dlnA_mt_syn
     complex*16, dimension(NPT) :: trans_func_obs,trans_func_syn
-    ! variance 
-    !real(kind=CUSTOM_REAL), dimension(NPT) :: var_trans_obs, var_trans_syn
 
     ! adjoint
     real(kind=CUSTOM_REAL), dimension(npts) :: fp1_tw,fp2_tw,fq1_tw,fq2_tw
 
     !! window
-    call cc_window(d1,npts,window_type,i_tstart1,i_tend1,0,0.d0,nlen1,d1_tw)
-    call cc_window(s1,npts,window_type,i_tstart1,i_tend1,0,0.d0,nlen1,s1_tw)
-    call cc_window(d2,npts,window_type,i_tstart2,i_tend2,0,0.d0,nlen2,d2_tw)
-    call cc_window(s2,npts,window_type,i_tstart2,i_tend2,0,0.d0,nlen2,s2_tw)
-    if(nlen1<1 .or. nlen1>npts) print*,'check nlen1 ',nlen1
-    if(nlen2<1 .or. nlen2>npts) print*,'check nlen2 ',nlen2
-    nlen =max(nlen1,nlen2)
+    nlen1=floor((tend1-tstart1)/deltat)+1
+    if(nlen1<=1 .or. nlen1>npts) then
+        print*,'check nlen1 ',nlen1
+        stop
+    endif
+    i_tstart1=max(floor(tstart1 / deltat), 1)
+    i_tend1 = min(i_tstart1+nlen1-1, npts)
+    nlen1=i_tend1-i_tstart1+1
+    allocate(tas1(nlen1))
+    call window_taper(nlen1,taper_percentage,taper_type,tas1)
+    s1_tw(1:nlen1)=tas1(1:nlen1)*s1(i_tstart1:i_tend1)
+    d1_tw(1:nlen1)=tas1(1:nlen1)*d1(i_tstart1:i_tend1)
 
+    nlen2=floor((tend2-tstart2)/deltat)+1
+    if(nlen2<=1 .or. nlen2>npts) then
+        print*,'check nlen2 ',nlen2
+        stop
+    endif
+    i_tstart2=max(floor(tstart2 / deltat), 1)
+    i_tend2 = min(i_tstart2+nlen2-1, npts)
+    nlen2=i_tend2-i_tstart2+1
+    allocate(tas2(nlen2))
+    call window_taper(nlen2,taper_percentage,taper_type,tas2)
+    s2_tw(1:nlen2)=tas2(1:nlen2)*s2(i_tstart2:i_tend2)
+    d2_tw(1:nlen2)=tas2(1:nlen2)*d2(i_tstart2:i_tend2)
+
+    nlen=max(nlen1,nlen2)
+
+    !!   find the relaible frequency limit
+    call frequency_limit(s1_tw,nlen,deltat,f0/2.5,f0*2.5,i_fstart1,i_fend1)
+    call frequency_limit(s2_tw,nlen,deltat,f0/2.5,f0*2.5,i_fstart2,i_fend2)
+    i_fend = min(i_fend1,i_fend2)
+    i_fstart = max(i_fstart1,i_fstart2)
+    if(i_fstart<i_fend) then  !DD MT measurement
     !! cc correction
     call xcorr_calc(d1_tw,d2_tw,npts,1,nlen,ishift_obs,dlnA_obs,cc_max_obs)
     tshift_obs= ishift_obs*deltat 
@@ -1345,7 +1531,6 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
     !! double-difference cc-measurement 
     ddtshift_cc = tshift_syn - tshift_obs
     ddlnA_cc = dlnA_syn - dlnA_obs
-    misfit=0.5*ddtshift_cc**2
 
     if(USE_ERROR_CC) then
         !! cc_error 
@@ -1357,8 +1542,12 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
     ! fixed window for d1, correct the window for d2
     dlnA_obs = 0.0
     dlnA_syn = 0.0
-    call cc_window(d2,npts,window_type,i_tstart2,i_tend2,ishift_obs,dlnA_obs,nlen2,d2_tw_cc)
-    call cc_window(s2,npts,window_type,i_tstart2,i_tend2,ishift_syn,dlnA_syn,nlen2,s2_tw_cc)
+    !call cc_window(d2,npts,window_type,i_tstart2,i_tend2,ishift_obs,dlnA_obs,nlen2,d2_tw_cc)
+    call cc_window(d2,npts,i_tstart2,i_tend2,ishift_obs,dlnA_obs,d2_tw_cc)
+    d2_tw_cc(1:nlen2)=tas2(1:nlen2)*d2_tw_cc(1:nlen2)
+    !call cc_window(s2,npts,window_type,i_tstart2,i_tend2,ishift_syn,dlnA_syn,nlen2,s2_tw_cc)
+    call cc_window(s2,npts,i_tstart2,i_tend2,ishift_syn,dlnA_syn,s2_tw_cc)
+    s2_tw_cc(1:nlen2)=tas2(1:nlen2)*s2_tw_cc(1:nlen2)
     if( DISPLAY_DETAILS) then
         print*
         print*, 'time-domain winodw'
@@ -1402,17 +1591,11 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
     enddo
     fvec = wvec / TWOPI
 
-    !!   find the relaible frequency limit
-    call frequency_limit(s1_tw,nlen,deltat,i_fstart1,i_fend1)
-    call frequency_limit(s2_tw,nlen,deltat,i_fstart2,i_fend2)
-    i_fend = min(i_fend1,i_fend2,floor(1.0/(2*deltat)/df)+1,floor(f0*2.5/df)+1)
-    i_fstart = max(i_fstart1,i_fstart2, ceiling(3.0/(nlen*deltat)/df)+1,ceiling(f0/2.5/df)+1)
-
     if( DISPLAY_DETAILS) then
-        print*,  'df/dw/df_new :', df,dw,df_new  
+        print*,  'NPT/df/dw/df_new :', NPT,df,dw,df_new  
         print*
         print*, 'find the spectral boundaries for reliable measurement'
-        print*, 'min, max frequency limit for 1 : ', fvec(i_fstart2),fvec(i_fend1)
+        print*, 'min, max frequency limit for 1 : ', fvec(i_fstart1),fvec(i_fend1)
         print*, 'min, max frequency limit for 2 : ', fvec(i_fstart2),fvec(i_fend2)
         print*, 'effective bandwidth (Hz) : ',fvec(i_fstart),fvec(i_fend),fvec(i_fend)-fvec(i_fstart)
         print*, 'half time-bandwidth product : ', NW
@@ -1441,11 +1624,13 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
         do i=i_fstart,i_fend
         write(IOUT,*) ddtau_w(i)*sqrt(dw)
         enddo
+        misfit=0.5*sum(ddtau_w(i_fstart:i_fend)**2*dw)
     elseif(misfit_type=='MA') then
         ! MA misfit
         do i=i_fstart,i_fend
         write(IOUT,*) ddlnA_w(i)*sqrt(dw)
         enddo
+        misfit=0.5*sum(ddlnA_w(i_fstart:i_fend)**2*dw)
     endif
     num=i_fend-i_fstart+1
 
@@ -1490,11 +1675,22 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
 
         ! reverse window and taper again 
         if(misfit_type=='MT') then
-        call cc_window_inverse(fp1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)
-        call cc_window_inverse(fp2_tw,npts,window_type,i_tstart2,i_tend2,ishift_syn,0.d0,adj2)
+        !call cc_window_inverse(fp1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)
+        !call cc_window_inverse(fp2_tw,npts,window_type,i_tstart2,i_tend2,ishift_syn,0.d0,adj2)
+        ! reverse window and taper again
+        call cc_window_inverse(fp1_tw,npts,i_tstart1,i_tend1,0.0,0.0,adj1)
+        adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1(i_tstart1:i_tend1)
+        call cc_window_inverse(fp2_tw,npts,i_tstart2,i_tend2,ishift_syn,0.0,adj2)
+        adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2(i_tstart2:i_tend2)
+
         elseif(misfit_type=='MA') then
-        call cc_window_inverse(fq1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)
-        call cc_window_inverse(fq2_tw,npts,window_type,i_tstart2,i_tend2,ishift_syn,0.d0,adj2)
+        !call cc_window_inverse(fq1_tw,npts,window_type,i_tstart1,i_tend1,0,0.d0,adj1)
+        !call cc_window_inverse(fq2_tw,npts,window_type,i_tstart2,i_tend2,ishift_syn,0.d0,adj2)
+        ! reverse window and taper again 
+        call cc_window_inverse(fq1_tw,npts,i_tstart1,i_tend1,0.0,0.0,adj1)
+        adj1(i_tstart1:i_tend1)=tas1(1:nlen1)*adj1(i_tstart1:i_tend1)
+        call cc_window_inverse(fq2_tw,npts,i_tstart2,i_tend2,ishift_syn,0.0,adj2)
+        adj2(i_tstart2:i_tend2)=tas2(1:nlen2)*adj2(i_tstart2:i_tend2)
         endif
 
         if( DISPLAY_DETAILS) then
@@ -1510,9 +1706,17 @@ subroutine MT_misfit_DD(d1,d2,s1,s2,npts,deltat,f0,&
             close(2)
         endif
 
-    endif ! compute_adjoint 
-
-    !  deallocate(tas)
+    endif ! compute_adjoint
+   else ! DD CC adj
+       print*, '*** Double-difference CC (traveltime) misfit'
+       call CC_misfit_DD(d1,d2,s1,s2,npts,deltat,&
+        tstart1,tend1,tstart2,tend2,&
+        taper_percentage,taper_type,&
+        compute_adjoint,&
+        adj1,adj2,num,misfit)
+    endif
+ 
+    deallocate(tas1,tas2)
 
 end subroutine MT_misfit_DD
 !-----------------------------------------------------------------------

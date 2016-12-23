@@ -778,9 +778,9 @@ end subroutine mtm_DD_adj
 !==============================================================================
 
 !-----------------------------------------------------------------------
-subroutine CC_similarity(d1,d2,npts,&
-        i_tstart1,i_tend1,i_tstart2,i_tend2,&
-        window_type,&
+subroutine CC_similarity(d1,d2,npts,deltat,&
+        tstart1,tend1,tstart2,tend2,&
+        taper_percentage,taper_type,&
         cc_max)
     !! measure the similarity of two waveforms based on cross-correlatiobs
 
@@ -789,46 +789,76 @@ subroutine CC_similarity(d1,d2,npts,&
 
     ! inputs & outputs 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: d1,d2
-    integer, intent(in) :: i_tstart1,i_tend1,i_tstart2,i_tend2
-    integer, intent(in) :: npts,window_type
+    integer, intent(in) :: npts
+    real(kind=CUSTOM_REAL), intent(in) :: deltat
+    real(kind=CUSTOM_REAL), intent(in) :: tstart1,tend1,tstart2,tend2
+    real(kind=CUSTOM_REAL), intent(in) :: taper_percentage
+    character(len=10), intent(in) :: taper_type
     real(kind=CUSTOM_REAL), intent(out) :: cc_max
 
     ! window
+    integer :: i
     integer :: nlen1,nlen2,nlen
+    integer :: i_tstart1,i_tend1,i_tstart2,i_tend2
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas1, tas2
     real(kind=CUSTOM_REAL), dimension(npts) :: d1_tw,d2_tw
     ! cc 
     integer :: ishift
     real(kind=CUSTOM_REAL) :: dlnA
 
     !! initialization
+    d1_tw(1:npts)=0.0
+    d2_tw(1:npts)=0.0
     cc_max=0.0
 
     !! window
-    call cc_window(d1,npts,window_type,i_tstart1,i_tend1,0,0.d0,nlen1,d1_tw)
-    call cc_window(d2,npts,window_type,i_tstart2,i_tend2,0,0.d0,nlen2,d2_tw)
-    if(nlen1<1 .or. nlen1>npts) print*,'check nlen1 ',nlen1
-    if(nlen2<1 .or. nlen2>npts) print*,'check nlen2 ',nlen2
+    nlen1=floor((tend1-tstart1)/deltat)+1
+    if(nlen1<1 .or. nlen1>npts) then 
+        print*,'check nlen1 ',nlen1
+        stop
+    endif
+    i_tstart1=max(floor(tstart1 / deltat), 1)
+    i_tend1 = min(i_tstart1+nlen1-1, npts)
+    nlen1=i_tend1-i_tstart1+1
+    allocate(tas1(nlen1))
+    call window_taper(nlen1,taper_percentage,taper_type,tas1)
+    d1_tw(1:nlen1)=d1(i_tstart1:i_tend1)
+    d1_tw(1:nlen1)=tas1(1:nlen1)*d1_tw(1:nlen1)
+
+    nlen2=floor((tend2-tstart2)/deltat)+1
+    if(nlen2<1 .or. nlen2>npts) then
+        print*,'check nlen2 ',nlen2
+        stop
+    endif
+    i_tstart2=max(floor(tstart2 / deltat), 1)
+    i_tend2 = min(i_tstart2+nlen2-1, npts)
+    nlen2=i_tend2-i_tstart2+1
+    allocate(tas2(nlen2))
+    call window_taper(nlen2,taper_percentage,taper_type,tas2)
+    d2_tw(1:nlen2)=d2(i_tstart2:i_tend2)
+    d2_tw(1:nlen2)=tas2(1:nlen2)*d2_tw(1:nlen2)
+
     nlen = max(nlen1,nlen2)
+
     !! cc
     call xcorr_calc(d1_tw,d2_tw,npts,1,nlen,ishift,dlnA,cc_max) !T(d1-d2)
-
+    deallocate(tas1,tas2)
 end subroutine cc_similarity
-
 ! ---------------------------------------------------------------------------
-subroutine frequency_limit (dat,nlen,deltat,i_fstart,i_fend)
+subroutine frequency_limit (dat,nlen,deltat,min_freq,max_freq,i_fstart,i_fend)
     use constants
     implicit none
 
     integer, intent(in) :: nlen
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: dat
     real(kind=CUSTOM_REAL), intent(in) ::  deltat
+    real(kind=CUSTOM_REAL), intent(in) :: min_freq,max_freq
     integer, intent(out) :: i_fstart,i_fend
 
     integer :: i,fnum 
     real(kind=CUSTOM_REAL) :: df,ampmax, wtr_use
     integer :: i_ampmax, i_fstart_stop, i_fend_stop
     complex (SIZE_DOUBLE), dimension(NPT) :: dat_dtwo     
-
 
     !! find reliable frequency limits 
     ! fft of untapered inputs 
@@ -862,6 +892,10 @@ subroutine frequency_limit (dat,nlen,deltat,i_fstart,i_fend)
         i_fend = i
     endif
     enddo
+    !Don't go beyond the Nyquist frequency
+    i_fend = min(i_fend,&
+        floor(1.0/(2*deltat)/df)+1,&
+        floor(max_freq/df))
 
     ! i_fstart 
     i_fstart = 1
@@ -876,6 +910,10 @@ subroutine frequency_limit (dat,nlen,deltat,i_fstart,i_fend)
         i_fstart = i
     endif
     enddo
+    !assume there are at least N cycles within the window
+    i_fstart = max(i_fstart,&
+        ceiling(ncycle_in_window/(nlen*deltat)/df),&
+        ceiling(min_freq/df))
 
     if( DISPLAY_DETAILS) then
         open(1,file=trim(output_dir)//'/spectrum',status='unknown')
@@ -1156,95 +1194,64 @@ subroutine time_costaper(dat,syn,npts,istart,iend)
 
 end subroutine time_costaper
 ! ---------------------------------------------------------------------------
-subroutine cc_window(dat,npts,window_type,istart,iend,ishift,dlnA,nlen,dat_win)
+subroutine cc_window(dat,npts,istart,iend,ishift,dlnA,dat_win)
     ! delay by ishift and scale by exp(dlnA)
     use constants
     implicit none
 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: dat
     real(kind=CUSTOM_REAL), intent(in) :: dlnA
-    integer, intent(in) :: npts, istart,iend, ishift,window_type
-    integer, intent(out) :: nlen
+    integer, intent(in) :: npts, istart, iend, ishift
+    integer :: nlen
     real(kind=CUSTOM_REAL), dimension(*), intent(out) :: dat_win
 
     integer ::  i, j
-    real(kind=CUSTOM_REAL) :: sfac1,  fac
-
-    !print*
-    !print*,'window with corrections: isfhit = ', ishift, ' dlnA = ',dlnA,&
-    !'window type -- ',window_type
 
     nlen = iend - istart+1
-
-    ! some constants
-    sfac1 = (2./real(nlen))**2   ! for Welch window
 
     ! initialization
     dat_win(1:npts) = 0.d0
 
     do i = 1, nlen
-    if(window_type ==2) then 
-        fac = 1 - sfac1*((i-1) - real(nlen)/2.)**2   
-    elseif(window_type ==3) then 
-        fac = 1. - cos(PI*(i-1)/(nlen-1))**ipwr_t    
-    elseif(window_type ==4) then 
-        fac = 0.5 - 0.5*cos(TWOPI*(i-1)/(nlen-1))    
-    else 
-        fac = 1. ! boxcar window
-    endif
 
     ! index 
     j = i + (istart-1) - ishift
 
     if(j>=1 .and. j <=npts) then
-        dat_win(i) = dat(j) * exp(dlnA) * fac ! shift and scale
+        dat_win(i) = dat(j) * exp(dlnA)  ! shift and scale
     endif
 
     enddo
 
 end subroutine cc_window
 ! ---------------------------------------------------------------------------
-subroutine cc_window_inverse(dat_win,npts,window_type,istart,iend,ishift,dlnA,dat)
+subroutine cc_window_inverse(dat_win,npts,istart,iend,ishift,dlnA,dat)
     use constants
     implicit none
 
     real(kind=CUSTOM_REAL), dimension(*), intent(in) :: dat_win
     real(kind=CUSTOM_REAL), intent(in) :: dlnA
-    integer, intent(in) :: npts, istart,iend, ishift,window_type
+    integer, intent(in) :: npts, istart,iend, ishift
     real(kind=CUSTOM_REAL), dimension(*), intent(out) :: dat
 
     integer ::  i, j, nlen
-    real :: sfac1, fac
-
-    !  print*
-    !  print*,'window with corrections: isfhit = ', ishift, ' dlnA = ',dlnA
 
     nlen = iend - istart
-
-    ! some constants
-    sfac1 = (2./real(nlen))**2   ! for Welch window
 
     ! initialization
     dat(1:npts) = 0.d0
 
     do i = 1, nlen
-    if(window_type ==2) then 
-        fac = 1 - sfac1*((i-1) - real(nlen)/2.)**2
-    else if(window_type ==3) then  
-        fac = 1. - cos(PI*(i-1)/(nlen-1))**ipwr_t 
-    else if(window_type ==4) then 
-        fac = 0.5 - 0.5*cos(TWOPI*(i-1)/(nlen-1))
-    else 
-        fac = 1. ! boxcar window
-    endif
 
+    ! index
     j = i + (istart-1) - ishift
 
     ! window dat2 using exact window info 
     if(j>=1 .and. j <=npts) then
-        dat(j) = dat_win(i) * exp(-dlnA) * fac
+        dat(j) = dat_win(i) * exp(-dlnA) 
     endif
     enddo
+
 end subroutine cc_window_inverse
 ! ---------------------------------------------------------------------------
 subroutine compute_cc(dat1, dat2, nlen, dt, ishift, tshift, dlnA, cc_max)

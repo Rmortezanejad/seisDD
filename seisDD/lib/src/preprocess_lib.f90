@@ -108,40 +108,45 @@ subroutine window(npts,istart,iend,window_type,win)
 
 end subroutine window
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine taper(NSTEP,taper_len,tas)
+subroutine window_taper(npts,taper_percentage,taper_type,tas)
     use constants
     implicit none
 
     ! input parameters
-    integer, intent(in) :: NSTEP,taper_len
+    integer, intent(in) :: npts
+    real, intent(in) :: taper_percentage
+    character(len=10) :: taper_type
     real, dimension(*), intent(out) :: tas
 
-    integer i, n_width_left,n_width_right
-    real ::  omega_left,omega_right, f0, f1
+    integer :: taper_len
+    integer :: i
 
     ! initialization
-    tas(1:NSTEP)=1.0
+    tas(1:npts)=1.0
 
-    ! set the number of points corresponding to the taper width
-    n_width_left=taper_len
-    n_width_right=taper_len
+    if (taper_percentage <= 0.0 .or. taper_percentage >= 1.0) then
+        taper_len = int(npts*taper_percentage / 2.0) 
+    else
+        taper_len = int(npts*taper_percentage / 2.0 + 0.5)
+    endif
 
-    ! set the taper properties according to type
-    omega_left = PI/real(n_width_left)
-    omega_right = PI/real(n_width_right)
-    f0 = 0.5
-    f1 = 0.5
+    do i=1, taper_len
+    if (trim(taper_type) == 'boxcar') then
+        tas(i)=1.0
+    elseif (trim(taper_type) == 'hann') then
+        tas(i)=0.5 - 0.5 * cos(2.0 * PI * (i-1) / (2 * taper_len - 1))
+    elseif (trim(taper_type) == 'hamming') then
+        tas(i)=0.54 - 0.46 * cos(2.0 * PI * (i-1) / (2 * taper_len - 1))
+    elseif (trim(taper_type) == 'cos') then
+        tas(i)=cos(PI * (i-1) / (2 * taper_len - 1) - PI / 2.0) ** ipwr_t
+    else
+        print*,'taper_type must be among "boxcar"/"hann"/"hamming"/"cos"!'
+    endif
+        tas(npts-i+1)=tas(i)
 
-    ! apply the taper symmetrically to left side of the data
-    do i = 1, n_width_left
-    tas(i) = f0-f1*cos(omega_left*(i-1))
     enddo
-    do i = 1, n_width_right
-    !  print*,i,omega_right,n_width_right,(f0-f1*cos(omega_right*(i-1)))
-    tas(NSTEP+1-i) = f0-f1*cos(omega_right*(i-1))
-    end do
 
-end subroutine taper
+end subroutine window_taper
 !------------------------------------------------------------------------
 subroutine xcorr(d,s,npts1,npts2,cc_array,ishift,cc_max,sigma)
     ! recommended by Yanhua -- to calculate cross-correlation time series cc_array 

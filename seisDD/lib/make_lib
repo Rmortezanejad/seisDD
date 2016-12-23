@@ -32,6 +32,4 @@ SUFFIXES = .f .o .f90 .F .mod
 	$(FC) ${FCLAGS} ${FLAGS} -c -o $@ $<
 
 clean:
-	rm -rf  ${LIB_preprocess} *.o *.mod OUTPUTS/*
-
-
+	rm -rf  ${LIB_preprocess} *.o *.mod OUTPUT_FILES/*

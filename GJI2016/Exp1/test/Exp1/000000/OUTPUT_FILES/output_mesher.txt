@@ -1,0 +1,99 @@
+ 
+ **********************************************
+ *** Specfem 2-D Mesher - MPI version       ***
+ **********************************************
+ 
+ Reading the parameter file...
+ 
+ Title of the simulation: Tape-Liu-Tromp (GJI 2007)
+ 
+ 
+ Receiver lines:
+   Nb of line sets =            1
+ 
+ Materials:
+   Nb of solid, fluid or porous materials =            1
+ 
+ --------
+ Material #           1  isotropic
+ rho,cp,cs   =    2600.00000000000        5800.00000000000     
+   3500.00000000000     
+ Qkappa, Qmu =    10.0000000000000        10.0000000000000     
+ Material is solid
+ --------
+ 
+ Mesh from internal meshing:
+ 
+ Reading interface data from file: DATA/interfaces.dat
+ Reading            2  points for interface            1
+ Reading            2  points for interface            2
+ 
+ Total number of layers in z direction =            1
+ There are           40  spectral elements along Z in layer            1
+ 
+ Total number of spectral elements along X =           40
+ Total number of spectral elements along Z =           40
+ 
+ Regions:
+   Nb of regions in the mesh =            1
+ 
+ ------
+ Region            1
+ IX from            1  to           40
+ IZ from            1  to           40
+ Material #            1  isotropic
+ Material is solid
+ vp     =    5800.000    
+ vs     =    3500.000    
+ rho    =    2600.000    
+ Poisson's ratio =   0.2136512    
+ QKappa =    10.00000    
+ Qmu    =    10.00000    
+ ------
+ Total number of spectral elements         =         1600
+ 
+ 
+ Parameter file successfully read 
+ 
+ The mesh contains         1600  elements
+ 
+ Control elements have            4  nodes
+ 
+ Source           1
+   Position xs, zs =    50000.0000000000        50000.0000000000     
+ 
+   Source type (1=force, 2=moment tensor):            1
+   Force source:
+   Angle of the source (deg) =   0.000000000000000E+000
+   Multiplying factor  =    10000000000.0000     
+ 
+   Time function type (1=Ricker, 2=First derivative, 3=Gaussian, 4=Dirac, 5=Heav
+ iside, 8=Read from file, 9=burst):           2
+   Ricker wavelet (first-derivative):
+   Frequency, delay =   8.400000000000001E-002  0.000000000000000E+000
+ 
+ Reading interface data from file: DATA/interfaces.dat
+ 
+ Mesh dimensions: 
+   Min and max value of X in the grid =   0.000000000000000E+000
+   480000.000000000     
+   Min and max value of Z in the grid =   0.000000000000000E+000
+   480000.000000000     
+ 
+ 
+ Partitioning method: SCOTCH
+ 
+ nedges_coupled (acoustic/elastic)     =            0
+ nedges_coupled (acoustic/poroelastic) =            0
+ nedges_coupled (poroelastic/elastic)  =            0
+ 
+ slice            0  has number of spectral elements =         400
+ slice            1  has number of spectral elements =         400
+ slice            2  has number of spectral elements =         400
+ slice            3  has number of spectral elements =         400
+ 
+ Position (x,z) of the source =    50000.0000000000        50000.0000000000     
+ 
+ 
+ This will be a parallel simulation on            4  processor cores
+ 

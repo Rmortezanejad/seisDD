@@ -1,0 +1,596 @@
+ 
+ **********************************************
+ **** Specfem 2-D Solver - MPI version     ****
+ **********************************************
+ 
+ There are            4  MPI processes
+ Processes are numbered from 0 to            3
+ 
+ There is a total of            4  slices
+ 
+ NDIM =            2
+ 
+ NGLLX =            5
+ NGLLZ =            5
+ 
+ using single precision for the calculations
+ 
+ smallest and largest possible floating-point numbers are:   1.1754944E-38
+  3.4028235E+38
+
+
+ -------------------------------------------------------------------------------
+ -------------------------------------------------------------------------------
+ Program SPECFEM2D: 
+ -------------------------------------------------------------------------------
+ -------------------------------------------------------------------------------
+ Tape-Liu-Tromp (GJI 2007)
+ -------------------------------------------------------------------------------
+ -------------------------------------------------------------------------------
+ D a t e : 22 - 12 - 2016                                 T i m e  : 22:59:04
+ -------------------------------------------------------------------------------
+ -------------------------------------------------------------------------------
+
+
+ C o n t r o l
+ =============
+
+     Number of spectral element control nodes. . .(npgeo) =     441
+     Number of space dimensions. . . . . . . . . . (NDIM) =       2
+
+
+ C o n t r o l
+ =============
+
+     Display frequency . . . .(NSTEP_BETWEEN_OUTPUT_INFO) =    400
+     Color display . . . . . . . . . . . . . . . (colors) =      1
+      == 0     black and white display              
+      == 1     color display                        
+     Numbered mesh . . . . . . . . . . . . . . .(numbers) =      0
+      == 0     do not number the mesh               
+      == 1     number the mesh                      
+
+
+ C o n t r o l
+ =============
+
+     Seismograms recording type . . . . . . .(seismotype) =      1
+     Angle for first line of receivers. . . . .(anglerec) =   0.00
+
+
+ C o n t r o l
+ =============
+
+     Read external initial field. . . . . .(initialfield) =      F
+     Add Bielak conditions (add_Bielak_conditions_bottom) =      F
+     Add Bielak conditions .(add_Bielak_conditions_right) =      F
+     Add Bielak conditions . .(add_Bielak_conditions_top) =      F
+     Add Bielak conditions. .(add_Bielak_conditions_left) =      F
+     Attenuation on/off . . . .(ATTENUATION_VISCOELASTIC) =      F
+     Save grid in ASCII file or not . (output_grid_ASCII) =      F
+     Save a file with total energy or not.(output_energy) =      F
+
+
+ C o n t r o l
+ =============
+
+     Vector display type . . . . . . . . .(imagetype_postscript) =      1
+     Percentage of cut for vector plots. . . . . . . .(cutsnaps) =   1.00
+     Subsampling of velocity model display. (subsamp_postscript) =      1
+
+
+ I t e r a t i o n s 
+ ===================
+
+     Number of time iterations . . . . .(NSTEP) =    4800
+     Time step increment. . . . . . . . . .(DT) =   6.000000E-02
+     Total simulation duration . . . . . (ttot) =   2.880000E+02
+
+
+     Source Type. . . . . . . . . . . . . . = Collocated Force
+     X-position (meters). . . . . . . . . . =    5.0000000000E+04
+     Y-position (meters). . . . . . . . . . =    5.0000000000E+04
+     Fundamental frequency (Hz) . . . . . . =    8.4000000000E-02
+     Time delay (s) . . . . . . . . . . . . =    0.0000000000E+00
+     Multiplying factor . . . . . . . . . . =    1.0000000000E+10
+     Angle from vertical direction (deg). . =    0.0000000000E+00
+
+     Onset time. . . . . . =   -14.2857142857143     
+     Fundamental period. . =    11.9047619047619     
+     Fundamental frequency =   8.400000000000001E-002
+     The onset time is ok
+
+     -- Spectral Elements --
+
+
+     Number of spectral elements . . . . . . . . .  (nspec) =   1600
+     Number of control nodes per element . . . . . (ngnod) =      4
+     Number of points in X-direction . . . . . . . (NGLLX) =      5
+     Number of points in Y-direction . . . . . . . (NGLLZ) =      5
+     Number of points per element. . . . . . (NGLLX*NGLLZ) =     25
+     Number of points for display . . . . . . (pointsdisp) =      6
+     Number of element material sets . . . . . . . (numat) =      1
+     Number of acoustic forcing elements (nelem_acforcing) =      0
+     Number of acoustic free surf (nelem_acoustic_surface) =      0
+
+
+ M a t e r i a l   s e t s :   2 D  (p o r o) e l a s t i c i t y
+ ======================================================
+
+     Number of material sets . . . . . . (numat) =     1
+
+
+     ----------------------------------------
+     -- Elastic (solid) isotropic material --
+     ----------------------------------------
+     Material set number. . . . . . . . (jmat) =     1
+     P-wave velocity. . . . . . . . . . . (cp) = 5.80000000E+03
+     S-wave velocity. . . . . . . . . . . (cs) = 3.50000000E+03
+     Mass density. . . . . . . . . . (density) = 2.60000000E+03
+     Poisson's ratio. . . . . . . . .(poisson) = 2.59552473E-01
+     First Lame parameter Lambda. . . (lambda) = 2.37640000E+10
+     Second Lame parameter Mu. . . . . . .(mu) = 3.18500000E+10
+     Bulk modulus Kappa . . . . . . . .(kappa) = 5.56140000E+10
+     Young's modulus E. . . . . . . . .(young) = 8.02334925E+10
+     QKappa_attenuation .  . . . . . .(QKappa) = 1.00000000E+01
+     Qmu_attenuation . . . . . . . . . . (Qmu) = 1.00000000E+01
+ 
+ Absorbing boundaries:
+   using Stacey absorbing boundary conditions
+ 
+ Number of absorbing elements:          160
+   nspec_left   =           40
+   nspec_right  =           40
+   nspec_bottom =           40
+   nspec_top    =           40
+ 
+ 
+ Setting up mesh
+ 
+ Generating global mesh numbering (fast version)...
+ 
+ Mesh numbering:
+   Total number of elements:         1600
+ 
+   Total number of acoustic elements           =            0
+   Total number of elastic/visco/poro elements =         1600
+ 
+ Approximate total number of grid points in the mesh
+ (with a few duplicates coming from MPI buffers):        26244
+ rho   2600.000       2600.000    
+ rho   2600.000       2600.000    
+ rho   2600.000       2600.000    
+ Mesh dimensions:
+   Xmin,Xmax of the whole mesh =   0.000000000000000E+000
+   480000.000000000     
+   Zmin,Zmax of the whole mesh =   0.000000000000000E+000
+   480000.000000000     
+ 
+ Assigning an external velocity and density model
+   reading external files: DATA/proc*****_rho.bin, .._vp.bin, .._vs.bin
+ rho   2600.000       2600.000    
+ Domains:
+   total number of acoustic elements        =            0
+   total number of elastic elements         =         1600
+   total number of poroelastic elements     =            0
+   total number of gravitoacoustic elements =            0
+ 
+ Setting up MPI communication arrays
+ 
+   maximum number of MPI interfaces (for a single slice) =            3
+ 
+   total MPI interface points:          652
+ 
+   master process:
+   number of MPI interfaces in acoustic domain    =            0
+   number of MPI interfaces in elastic domain     =            3
+   number of MPI interfaces in poroelastic domain =            0
+ 
+   maximum length of a single MPI interface  =           81
+ 
+   number of outer elements  =           39
+   number of inner elements  =          361
+ 
+   percentage of outer elements    9.750000     %
+   percentage of inner elements    90.25000     %
+ 
+   number of global nodes in outer elements  =          785
+   number of global nodes in inner elements  =         5929
+ 
+   determining communication phases:
+   elastic domains:
+   total number of outer/inner elements =          156        1444
+   total percentage of outer elements    9.750000     %
+   total percentage of inner elements    90.25000     %
+ 
+ All mesh setup done successfully
+ 
+ sources:
+ 
+ *******************************
+  locating force source
+ *******************************
+ 
+ 
+ Force source:
+             original x:    50000.00    
+             original z:    50000.00    
+ closest estimate found:   0.0000000E+00  m away
+  in rank            1
+  in element           85
+  in elastic domain
+  at xi,gamma coordinates =  -0.666666666666667      -0.666666666666667     
+ 
+ 
+ end of force source detection
+ 
+ 
+ receivers:
+ 
+ Total number of receivers =            2
+ 
+ 
+ ********************
+  locating receivers
+ ********************
+ 
+ reading receiver information from the DATA/STATIONS file
+ 
+ 
+ Station #            1     AA      S0001                           
+             original x:    270000.0    
+             original z:    270000.0    
+   distance from source:    311127.0    
+ closest estimate found:   0.0000000E+00  m away
+  in element           43
+  in rank            3
+  at xi,gamma coordinates =   0.000000000000000E+000  0.000000000000000E+000
+ 
+ 
+ Station #            2     AA      S0002                           
+             original x:    350000.0    
+             original z:    350000.0    
+   distance from source:    424264.1    
+ closest estimate found:   1.6463612E-10  m away
+  in element          190
+  in rank            3
+  at xi,gamma coordinates =  -0.666666666666674      -0.666666666666674     
+ 
+ 
+ end of receiver detection
+ 
+ found a total of            2  receivers, this is okay
+ 
+ 
+ Preparing array allocations
+   arrays for elastic domains
+   wavefield initialization
+   done initialization
+ 
+ Preparing mass matrices
+   initializing mass matrices
+   inverting mass matrices
+ 
+ Preparing image coloring
+ 
+ Checking mesh and stability
+ 
+ ********
+ Model: P (or PI) velocity min,max =    5800.00000000000     
+   5800.00000000000     
+ Model: S velocity min,max         =    3500.00000000000     
+   3500.00000000000     
+ Model: density min,max            =    2600.00000000000     
+   2600.00000000000     
+ ********
+ 
+ 
+ *********************************************
+ *** Verification of simulation parameters ***
+ *********************************************
+ 
+ *** Max grid size =    12000.0000000000     
+ *** Min grid size =    12000.0000000000     
+ *** Max/min ratio =    1.00000000000000     
+ 
+ *** Minimum GLL point distance  =    2072.07797575214     
+ *** Average GLL point distance  =    3000.00000000000     
+ 
+ *** Minimum period resolved     =    4.28571428571429     
+ *** Maximum frequency resolved  =   0.233333333333333      Hz
+ 
+ *** Maximum suggested time step                 =   0.178627411702770     
+ *** Maximum suggested (Ricker) source frequency =   9.333333333333334E-002
+ 
+ *** for DT :   6.000000000000000E-002
+ *** Max CFL stability condition of the time scheme based on P wave velocity (mu
+ st be below about 0.50 or so) =   0.167947347576860     
+ 
+ ----
+ Number of points per wavelength:
+ ----
+   Source            1
+   maximum dominant source frequency =   0.210000000000000      Hz
+ 
+   Nb pts / lambdaP_fmax min =    9.206349    
+   Nb pts / lambdaP_fmax max =    9.206349    
+ 
+   Nb pts / lambdaS_fmax min =    5.555555    
+   Nb pts / lambdaS_fmax max =    5.555555    
+ 
+ -----------------------------------------
+ 
+ histogram of min number of points per S wavelength in solid regions:
+ 
+ there are         1600  elements out of         1600  in solid regions
+   (i.e.,    100.0000     % of the total)
+ 
+ (too small = poor resolution of calculations -
+  too big = wasting memory and CPU time)
+ (threshold value is around 4.5 points per S wavelength
+  in elastic regions and 5.5 per P wavelength in fluid regions):
+ 
+   5.500000      -    5.505556               0    0.0000000E+00  %
+   5.505556      -    5.511111               0    0.0000000E+00  %
+   5.511111      -    5.516667               0    0.0000000E+00  %
+   5.516667      -    5.522222               0    0.0000000E+00  %
+   5.522222      -    5.527778               0    0.0000000E+00  %
+   5.527778      -    5.533333               0    0.0000000E+00  %
+   5.533333      -    5.538889               0    0.0000000E+00  %
+   5.538889      -    5.544445               0    0.0000000E+00  %
+   5.544445      -    5.550000               0    0.0000000E+00  %
+   5.550000      -    5.555555               0    0.0000000E+00  %
+   5.555555      -    5.561111            1600     100.0000      %
+   5.561111      -    5.566667               0    0.0000000E+00  %
+   5.566667      -    5.572222               0    0.0000000E+00  %
+   5.572222      -    5.577778               0    0.0000000E+00  %
+   5.577778      -    5.583333               0    0.0000000E+00  %
+   5.583333      -    5.588889               0    0.0000000E+00  %
+   5.588889      -    5.594444               0    0.0000000E+00  %
+   5.594444      -    5.600000               0    0.0000000E+00  %
+   5.600000      -    5.605556               0    0.0000000E+00  %
+   5.605556      -    5.611111               0    0.0000000E+00  %
+ 
+ total percentage =    100.000000000000       %
+ 
+ 
+ total number of elements in fluid and solid regions =         1600
+ 
+ 
+ Preparing source time function
+ 
+ Preparing material arrays
+ 
+ done, preparation successful
+ 
+
+ =========================================
+ =  T i m e  e v o l u t i o n  l o o p  =
+ =========================================
+
+ 
+ Starting time iteration loop ...
+ 
+ 
+ ******************************************************************
+Time step number       5   t =    0.2400 s out of    4800
+ ******************************************************************
+ We have done   8.3350696E-02 % of the total
+ Max norm of vector field in solid (elastic) =   1.1021672E-08
+ Elapsed time in seconds =   1.999855041503906E-003
+ Elapsed time in hh:mm:ss =      0 h 00 m 00 s
+ Mean elapsed time per time step in seconds =   3.999710083007812E-004
+ Time steps remaining =         4795
+ Estimated remaining time in seconds =    1.91786098480225     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 01 s
+ Estimated total run time in seconds =    1.91986083984375     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 01 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number     400   t =   23.9400 s out of    4800
+ ******************************************************************
+ We have done    8.314232     % of the total
+ Max norm of vector field in solid (elastic) =   8.4465239E-03
+ Elapsed time in seconds =   0.179999828338623     
+ Elapsed time in hh:mm:ss =      0 h 00 m 00 s
+ Mean elapsed time per time step in seconds =   4.499995708465576E-004
+ Time steps remaining =         4400
+ Estimated remaining time in seconds =    1.97999811172485     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 01 s
+ Estimated total run time in seconds =    2.15999794006348     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number     800   t =   47.9400 s out of    4800
+ ******************************************************************
+ We have done    16.64930     % of the total
+ Max norm of vector field in solid (elastic) =   4.8332736E-03
+ Elapsed time in seconds =   0.359999895095825     
+ Elapsed time in hh:mm:ss =      0 h 00 m 00 s
+ Mean elapsed time per time step in seconds =   4.499998688697815E-004
+ Time steps remaining =         4000
+ Estimated remaining time in seconds =    1.79999947547913     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 01 s
+ Estimated total run time in seconds =    2.15999937057495     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number    1200   t =   71.9400 s out of    4800
+ ******************************************************************
+ We have done    24.98437     % of the total
+ Max norm of vector field in solid (elastic) =   3.7394578E-03
+ Elapsed time in seconds =   0.539999961853027     
+ Elapsed time in hh:mm:ss =      0 h 00 m 00 s
+ Mean elapsed time per time step in seconds =   4.499999682108561E-004
+ Time steps remaining =         3600
+ Estimated remaining time in seconds =    1.61999988555908     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 01 s
+ Estimated total run time in seconds =    2.15999984741211     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number    1600   t =   95.9400 s out of    4800
+ ******************************************************************
+ We have done    33.31944     % of the total
+ Max norm of vector field in solid (elastic) =   3.1594613E-03
+ Elapsed time in seconds =   0.720000028610229     
+ Elapsed time in hh:mm:ss =      0 h 00 m 00 s
+ Mean elapsed time per time step in seconds =   4.500000178813935E-004
+ Time steps remaining =         3200
+ Estimated remaining time in seconds =    1.44000005722046     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 01 s
+ Estimated total run time in seconds =    2.16000008583069     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number    2000   t =  119.9400 s out of    4800
+ ******************************************************************
+ We have done    41.65451     % of the total
+ Max norm of vector field in solid (elastic) =   2.7858478E-03
+ Elapsed time in seconds =   0.898999929428101     
+ Elapsed time in hh:mm:ss =      0 h 00 m 00 s
+ Mean elapsed time per time step in seconds =   4.494999647140503E-004
+ Time steps remaining =         2800
+ Estimated remaining time in seconds =    1.25859990119934     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 01 s
+ Estimated total run time in seconds =    2.15759983062744     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number    2400   t =  143.9400 s out of    4800
+ ******************************************************************
+ We have done    49.98958     % of the total
+ Max norm of vector field in solid (elastic) =   2.5199128E-03
+ Elapsed time in seconds =    1.07899999618530     
+ Elapsed time in hh:mm:ss =      0 h 00 m 01 s
+ Mean elapsed time per time step in seconds =   4.495833317438762E-004
+ Time steps remaining =         2400
+ Estimated remaining time in seconds =    1.07899999618530     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 01 s
+ Estimated total run time in seconds =    2.15799999237061     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number    2800   t =  167.9400 s out of    4800
+ ******************************************************************
+ We have done    58.32465     % of the total
+ Max norm of vector field in solid (elastic) =   2.3178251E-03
+ Elapsed time in seconds =    1.25799989700317     
+ Elapsed time in hh:mm:ss =      0 h 00 m 01 s
+ Mean elapsed time per time step in seconds =   4.492856775011335E-004
+ Time steps remaining =         2000
+ Estimated remaining time in seconds =   0.898571355002267     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 00 s
+ Estimated total run time in seconds =    2.15657125200544     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number    3200   t =  191.9400 s out of    4800
+ ******************************************************************
+ We have done    66.65972     % of the total
+ Max norm of vector field in solid (elastic) =   7.7875220E-04
+ Elapsed time in seconds =    1.43799996376038     
+ Elapsed time in hh:mm:ss =      0 h 00 m 01 s
+ Mean elapsed time per time step in seconds =   4.493749886751175E-004
+ Time steps remaining =         1600
+ Estimated remaining time in seconds =   0.718999981880188     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 00 s
+ Estimated total run time in seconds =    2.15699994564056     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number    3600   t =  215.9400 s out of    4800
+ ******************************************************************
+ We have done    74.99479     % of the total
+ Max norm of vector field in solid (elastic) =   1.9436942E-04
+ Elapsed time in seconds =    1.61699986457825     
+ Elapsed time in hh:mm:ss =      0 h 00 m 01 s
+ Mean elapsed time per time step in seconds =   4.491666290495131E-004
+ Time steps remaining =         1200
+ Estimated remaining time in seconds =   0.538999954859416     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 00 s
+ Estimated total run time in seconds =    2.15599981943766     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number    4000   t =  239.9400 s out of    4800
+ ******************************************************************
+ We have done    83.32986     % of the total
+ Max norm of vector field in solid (elastic) =   1.3897878E-04
+ Elapsed time in seconds =    1.79699993133545     
+ Elapsed time in hh:mm:ss =      0 h 00 m 01 s
+ Mean elapsed time per time step in seconds =   4.492499828338623E-004
+ Time steps remaining =          800
+ Estimated remaining time in seconds =   0.359399986267090     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 00 s
+ Estimated total run time in seconds =    2.15639991760254     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number    4400   t =  263.9400 s out of    4800
+ ******************************************************************
+ We have done    91.66493     % of the total
+ Max norm of vector field in solid (elastic) =   1.1158362E-04
+ Elapsed time in seconds =    1.97699999809265     
+ Elapsed time in hh:mm:ss =      0 h 00 m 01 s
+ Mean elapsed time per time step in seconds =   4.493181813846935E-004
+ Time steps remaining =          400
+ Estimated remaining time in seconds =   0.179727272553877     
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 00 s
+ Estimated total run time in seconds =    2.15672727064653     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ The run will finish approximately on: Thu Dec 22, 2016 22:59
+ 
+ 
+ ******************************************************************
+Time step number    4800   t =  287.9400 s out of    4800
+ ******************************************************************
+ We have done    100.0000     % of the total
+ Max norm of vector field in solid (elastic) =   9.6847732E-05
+ Elapsed time in seconds =    2.15699982643127     
+ Elapsed time in hh:mm:ss =      0 h 00 m 02 s
+ Mean elapsed time per time step in seconds =   4.493749638398489E-004
+ Time steps remaining =            0
+ Estimated remaining time in seconds =   0.000000000000000E+000
+ Estimated remaining time in hh:mm:ss =      0 h 00 m 00 s
+ Estimated total run time in seconds =    2.15699982643127     
+ Estimated total run time in hh:mm:ss =      0 h 00 m 02 s
+ 
+ 
+ Saving elastic last frame...
+ 
+
+
+ -------------------------------------------------------------------------------
+ -------------------------------------------------------------------------------
+ Program SPECFEM2D: 
+ -------------------------------------------------------------------------------
+ -------------------------------------------------------------------------------
+ Tape-Liu-Tromp (GJI 2007)
+ -------------------------------------------------------------------------------
+ -------------------------------------------------------------------------------
+ D a t e : 22 - 12 - 2016                                 T i m e  : 22:59:06
+ -------------------------------------------------------------------------------
+ -------------------------------------------------------------------------------

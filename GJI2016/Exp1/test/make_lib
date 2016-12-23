@@ -1,0 +1,35 @@
+FC = ifort
+FCFLAGS=-g
+FLAGS=-sox -cpp  -traceback -w -ftz  -O3 -xSSSE3 -no-ip -fno-fnalias -fno-alias -vec-report1
+
+SRC_DIR=/tigress/yanhuay/seisDD/seisDD/lib/src
+MOD_DIR=./bin
+LIB_preprocess=./bin/seismo.a
+LIBSRC_preprocess=\
+         ${MOD_DIR}/constants.f90 \
+         ${SRC_DIR}/m_hilbert_transform.f90 \
+         ${SRC_DIR}/seismo_sub.f90 \
+         ${SRC_DIR}/ma_sub2.f90 \
+         ${SRC_DIR}/ma_sub.f90 \
+         ${SRC_DIR}/adjoint_lib.f90 \
+         ${SRC_DIR}/preprocess_lib.f90 \
+         ${SRC_DIR}/optimization_lib.f90 \
+         ${SRC_DIR}/split_string.f90 
+
+LIBOBJ_preprocess = ${LIBSRC_preprocess:%.f=${LIB_preprocess}(%.o)} ${LIBSRC_preprocess:%.f90=${LIB_preprocess}(%.o)} \
+         ${LIBSRC_preprocess:%.F=${LIB_preprocess}(%.o)}
+
+${LIB_preprocess}:${LIBOBJ_preprocess}
+
+SUFFIXES = .f .o .f90 .F .mod
+.SUFFIXES: $(SUFFIXES)
+
+.f.o:
+	$(FC) ${FCLAGS} ${FLAGS} -c -o $@ $<
+.F.o:
+	$(FC) ${FCLAGS} ${FLAGS} -c -o $@ $<
+.f90.o:
+	$(FC) ${FCLAGS} ${FLAGS} -c -o $@ $<
+
+clean:
+	rm -rf  ${LIB_preprocess} *.o *.mod OUTPUT_FILES/*

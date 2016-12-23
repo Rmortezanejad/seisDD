@@ -70,6 +70,8 @@ real(kind=CUSTOM_REAL), parameter :: mt_threshold=0.9! eigenvalue threshold
 !integer, parameter :: MW=10 ! number of segments of uncorrelated frequency points 
 real(kind=CUSTOM_REAL), parameter :: NW=3
 integer, parameter :: NTAPER=int(2*NW-1)
+! ncyle in window 
+integer, parameter :: ncycle_in_window=3
 ! normalize
 logical :: NORMALIZE=.false.
 ! error estimation 

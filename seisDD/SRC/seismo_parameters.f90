@@ -40,10 +40,9 @@ INTEGER, PARAMETER :: Wscale=0
 !window
 LOGICAL :: TIME_WINDOW=.false.
 INTEGER, PARAMETER :: window_type=3
-REAL(KIND=CUSTOM_REAL), PARAMETER :: window_len=3.0/f0
-REAL(KIND=CUSTOM_REAL), PARAMETER :: taper_len=1.2/f0
-REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_TOP=t0
-REAL(KIND=CUSTOM_REAL), PARAMETER :: T0_BOT=T0_TOP+window_len
+REAL(KIND=CUSTOM_REAL) :: taper_percentage=0.2
+CHARACTER (LEN=10) :: taper_type='hann'
+REAL(KIND=CUSTOM_REAL), PARAMETER :: min_window_len=1.0/f0
 REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_TOP=3900
 REAL(KIND=CUSTOM_REAL), PARAMETER :: VEL_BOT=3100
 ! damping
@@ -134,7 +133,9 @@ CHARACTER (LEN=MAX_STRING_LEN) :: measurement_list
 CHARACTER (LEN=MAX_STRING_LEN) :: misfit_type_list
 
 !! window 
-INTEGER,DIMENSION(:), ALLOCATABLE  :: win_start, win_end
+REAL(KIND=CUSTOM_REAL), DIMENSION(:), ALLOCATABLE  :: win_start, win_end
+REAL(KIND=CUSTOM_REAL) ::  tstart, tend
+REAL(KIND=CUSTOM_REAL) ::  tstart_ref, tend_ref
 
 ! event nomralize
 REAL(KIND=CUSTOM_REAL) :: event_norm

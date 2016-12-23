@@ -135,6 +135,9 @@ program misfit_adjoint
             OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier) 
             call Absolute_diff(trim(measurement_types(itype)))
             close(IOUT)
+
+            ! distribution estimated variance
+            if(uncertainty .and. num_AD>1) then
             ! load measurement_AD
             if(trim(measurement_types(itype))=='IP') then 
                 allocate(measurement_AD(2*num_AD))
@@ -142,13 +145,13 @@ program misfit_adjoint
                 allocate(measurement_AD(num_AD))
             endif
             OPEN (UNIT=IIN, FILE=filename,iostat=ier)
+            if(ier/=0)  stop 'fail to open DD misfit file'
             read(IIN,*) measurement_AD
             close(IIN)
             ! estimate mean and variance 
             mean_AD=sum(measurement_AD)/num_AD
-            ! distribution estimated variance
-            if(uncertainty .and. num_AD>1) then
-                write(filename,'(a,i6.6,a)') &
+            ! write/read variance into/from file
+            write(filename,'(a,i6.6,a)') &
                     trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_AD'
                 ex=.false.
                 inquire (file=trim(filename), exist=ex)
@@ -164,10 +167,10 @@ program misfit_adjoint
                     write(IOUT,*) var_AD
                     close(IOUT)
                 endif
-            endif
-
+            deallocate(measurement_AD)
+        endif !! unvertainty
             ! misfit and adj
-            misfit_AD=0.5*sum(measurement_AD**2)/var_AD/max(num_AD,1)*measurement_weight(itype)
+            misfit_AD=misfit_AD/var_AD/max(num_AD,1)*measurement_weight(itype) 
             seism_adj_AD=seism_adj_AD/var_AD/max(num_AD,1)*measurement_weight(itype)
 
             if(DISPLAY_DETAILS) then
@@ -176,14 +179,11 @@ program misfit_adjoint
                 print*, 'misfit_',trim(trim(measurement_types(itype))),'_AD'
                 print*, 'measurement_weight : ', measurement_weight(itype)
                 print*, 'total number of measurements :', num_AD
-                print*, 'mean_AD=',mean_AD
-                print*, 'var_AD=',var_AD
                 print*, 'misfit_AD :',misfit_AD 
                 print*, 'min/max of adj : ',&
                 minval(seism_adj_AD(:,:)), maxval(seism_adj_AD(:,:))
             endif
-            deallocate(measurement_AD)
-        endif
+        endif !!AD
 
         ! differential measurement
         if (nrec_proc>1 .and. index(misfit_type_list,'DD')>0) then
@@ -192,6 +192,9 @@ program misfit_adjoint
             OPEN (IOUT,FILE=trim(filename),status='unknown',iostat=ier)
             call Relative_diff(input_dir,adjustl(data_names(icomp)),trim(measurement_types(itype)))
             close(IOUT)
+
+            ! distribution estimated variance
+            if(uncertainty .and. num_DD>1) then
             ! load measurement_DD
             if(trim(measurement_types(itype))=='IP') then
                 allocate(measurement_DD(2*num_DD))
@@ -199,13 +202,13 @@ program misfit_adjoint
                 allocate(measurement_DD(num_DD))
             endif
             OPEN (UNIT=IIN, FILE=filename,iostat=ier)
+            if(ier/=0)  stop 'fail to open DD misfit file'
             read(IIN,*) measurement_DD
             close(IIN)
             ! estimate mean and variance 
             mean_DD=sum(measurement_DD)/num_DD
-            ! distribution estimated variance
-            if(uncertainty .and. num_DD>1) then
-                write(filename,'(a,i6.6,a)') &
+            ! write/read variance into/from file
+            write(filename,'(a,i6.6,a)') &
                     trim(input_dir)//'/proc',myrank,'_variance_'//trim(measurement_types(itype))//'_DD'
                 ex=.false.
                 inquire (file=trim(filename), exist=ex)
@@ -221,10 +224,10 @@ program misfit_adjoint
                     write(IOUT,*) var_DD
                     close(IOUT)
                 endif
-            endif
-
+            deallocate(measurement_DD)    
+        endif !! uncertainty
             ! misfit and adj
-            misfit_DD=0.5*sum(measurement_DD**2)/var_DD/max(num_DD,1)*measurement_weight(itype)
+            misfit_DD=misfit_DD/var_DD/max(num_DD,1)*measurement_weight(itype)
             seism_adj_DD=seism_adj_DD/var_DD/max(num_DD,1)*measurement_weight(itype)
 
            if(DISPLAY_DETAILS) then
@@ -233,14 +236,11 @@ program misfit_adjoint
                 print*, 'misfit_',trim(trim(measurement_types(itype))),'_DD'
                 print*, 'measurement_weight : ', measurement_weight(itype)
                 print*, 'total number of measurements :', num_DD
-                print*, 'mean_DD=',mean_DD
-                print*, 'var_DD=',var_DD
                 print*, 'misfit_DD :', misfit_DD
                 print*, 'min/max of adj : ',&
                 minval(seism_adj_DD(:,:)), maxval(seism_adj_DD(:,:))
             endif
-            deallocate(measurement_DD)
-        endif
+        endif !! DD
 
         ! combine misfit and adj for AD and DD
         misfit=misfit+misfit_AD + misfit_DD
@@ -372,8 +372,8 @@ subroutine initialize(directory,data_name)
         seism_adj = 0.0_CUSTOM_REAL
         seism_adj_AD = 0.0_CUSTOM_REAL
         seism_adj_DD = 0.0_CUSTOM_REAL
-        win_start=NSTEP
-        win_end=1
+        win_start=0.0
+        win_end=0.0
         event_norm=1.0
         trace_norm=1.0
         do itime=1,NSTEP
@@ -415,10 +415,10 @@ subroutine process_data_all(seism,tag)
     character(len=3) :: tag
     real(kind=CUSTOM_REAL) :: trace(NSTEP)
     real(kind=CUSTOM_REAL) :: wtr
-    integer :: istart,iend
+    real(kind=CUSTOM_REAL) :: taper_len
     integer :: itime
     integer :: NA
-    real(kind=CUSTOM_REAL) :: tas(NSTEP)
+    real(kind=CUSTOM_REAL), dimension(:), allocatable :: tas
 
     !! Event normalization
     if(EVENT_NORMALIZE) then
@@ -432,11 +432,10 @@ subroutine process_data_all(seism,tag)
     !! trace-wise processing
     do irec = 1,nrec_proc 
     trace(:) = seism(:,irec)
-    ! initialization
-    istart=1
-    iend=NSTEP
+    tstart=0.0
+    tend=(NSTEP-1)*deltat
 
-    wtr=norm2(trace(istart:iend))
+    wtr=norm2(trace(1:NSTEP))
     if(wtr>SMALL_VAL) then  ! non-zero trace
         !! trace normalization 
         if(TRACE_NORMALIZE) then
@@ -445,44 +444,48 @@ subroutine process_data_all(seism,tag)
             if(tag=='syn') trace_norm(irec)=wtr
         endif
         ! WT filtering
-        if( Wscale .gt. 0.and. istart<iend) then
+        if( Wscale .gt. 0) then
             call WT(trace,NSTEP,Wscale,NA)
         endif
         !! mute near offset 
         if(MUTE_NEAR .and. dis_sr(irec)<=offset_near ) then
             trace(1:NSTEP) = 0.0
-            istart=NSTEP
-            iend=0
+            tstart=0.0
+            tend=0.0
         endif
         !! muter far offset
         if(MUTE_FAR .and. dis_sr(irec)>=offset_far) then
-            trace(1:NSTEP) =0.0
-            istart=NSTEP
-            iend=0
+            trace(1:NSTEP) = 0.0
+            tstart=0.0
+            tend=0.0
         endif
         !! laplace damping spatially and temporally 
-        if (DAMPING .and. istart<iend) then
+        if (DAMPING) then
             ! spatial
             trace=trace*exp(-(dis_sr(irec)*lambda_x)**2)
             ! temporal
             trace(1:NSTEP)=trace(1:NSTEP)*exp(-(time(1:NSTEP)*lambda_t)**2)
         endif
         ! time-domain window using slopes 
-        if(TIME_WINDOW .and. istart<iend) then
-            istart=max(int((T0_TOP+dis_sr(irec)/VEL_TOP-taper_len)/deltat),istart)
-            iend=min(int((T0_BOT+dis_sr(irec)/VEL_BOT+taper_len)/deltat),iend)
-            tas(1:NSTEP)=0.d0
-            if(iend>istart) then
-                call window(NSTEP,istart,iend,window_type,tas)
+        if(TIME_WINDOW) then
+            tstart=dis_sr(irec)/VEL_TOP
+            tend=dis_sr(irec)/VEL_BOT
+            if(tend>tstart) then
+                taper_len = taper_percentage/2.0 * (tend-tstart)
+                tstart=max(tstart-taper_len,0.0)
+                tend=min(tend+taper_len,(NSTEP-1)*deltat)
+                if((tend-tstart)<min_window_len) then 
+                    tstart=0.0
+                    tend=0.0
+                endif
             else
-                istart=NSTEP
-                iend=1
+                tstart=0.0
+                tend=0.0
             endif
-            trace=trace*tas 
         endif ! window
         ! save
-        win_start(irec)=istart
-        win_end(irec)=iend
+        win_start(irec)=tstart
+        win_end(irec)=tend
     endif ! non-zero trace
     seism(:,irec)=trace(:)
     enddo ! irec
@@ -516,11 +519,10 @@ subroutine process_adj_all()
 
 end subroutine process_adj_all
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine process_adj_trace(trace,istart,iend,dis)
+subroutine process_adj_trace(trace,dis)
     use seismo_parameters
     implicit none
     real(kind=CUSTOM_REAL) :: trace(NSTEP)
-    integer :: istart,iend
     real(kind=CUSTOM_REAL) :: dis
     real(kind=CUSTOM_REAL) :: wtr
     integer :: NA
@@ -528,15 +530,6 @@ subroutine process_adj_trace(trace,istart,iend,dis)
     real(kind=CUSTOM_REAL) :: tas(NSTEP)
     real(kind=CUSTOM_REAL), dimension(:),allocatable :: stf_reverse
 
-    wtr=norm2(trace(istart:iend))
-    if(wtr>SMALL_VAL) then  ! non-zero trace
-        ! time-domain window using slopes 
-        if(TIME_WINDOW) then
-            ! window
-            tas(1:NSTEP)=0.d0
-            call window(NSTEP,istart,iend,window_type,tas)
-            trace=trace*tas
-        endif
         !! laplace damping spatially and temporally 
         if (DAMPING) then
             ! spatial
@@ -556,7 +549,6 @@ subroutine process_adj_trace(trace,istart,iend,dis)
         if( Wscale .gt. 0) then
             call WT(trace,NSTEP,Wscale,NA)
         endif
-    endif ! non-zero trace
 
 end subroutine process_adj_trace
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  `  
@@ -567,7 +559,7 @@ subroutine Absolute_diff(measurement_type)
     integer :: irec
     real(kind=CUSTOM_REAL) :: d(NSTEP),s(NSTEP),adj(NSTEP)
     real(kind=CUSTOM_REAL) :: wtr
-    integer :: ntstart,ntend,nlen,num,num_measure
+    integer :: nlen,num,num_measure
 
     ! initialization
     d = 0.0_CUSTOM_REAL
@@ -585,17 +577,13 @@ subroutine Absolute_diff(measurement_type)
     num = 0
 
     ! window info
-    ntstart = win_start(irec)
-    ntend= win_end(irec)
-    nlen=ntend-ntstart+1
-    if(nlen<1 .or. nlen>NSTEP) cycle
-    if (norm2(d(ntstart:ntend),1)<SMALL_VAL .or. &
-        norm2(s(ntstart:ntend),1)<SMALL_VAL) cycle
-
+    tstart = win_start(irec)
+    tend= win_end(irec)
+    
     !!  evaluate misfit and adj 
     call misfit_adj_AD(measurement_type,d,s,NSTEP,&
-        deltat,f0,ntstart,ntend,&
-        window_type,compute_adjoint, &
+        deltat,f0,tstart,tend,taper_percentage,taper_type,&
+        compute_adjoint, &
         adj,num,misfit_AD)
     num_AD = num_AD + num 
     num_measure=num_measure+1
@@ -605,7 +593,7 @@ subroutine Absolute_diff(measurement_type)
     endif
 
     if(compute_adjoint) then 
-        call process_adj_trace(adj,ntstart,ntend,dis_sr(irec))
+        call process_adj_trace(adj,dis_sr(irec))
         seism_adj_AD(:,irec) = seism_adj_AD(:,irec) + adj(:)
     endif
     enddo ! irec
@@ -624,8 +612,7 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
     real(kind=CUSTOM_REAL) :: d_ref(NSTEP),s_ref(NSTEP),adj_ref(NSTEP)
     real(kind=CUSTOM_REAL) :: dis_sr1, dis_sr2, dis_rr
     real(kind=CUSTOM_REAL) :: cc_max_obs
-    integer :: ntstart,ntend,nlen,num,num_measure=0
-    integer :: ntstart_ref,ntend_ref,nlen_ref
+    integer :: nlen,num,num_measure=0
     character(len=2) :: measurement_type
 
     ! initialization
@@ -656,13 +643,9 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
     dis_sr1=dis_sr(irec)
 
     ! window info
-    ntstart = win_start(irec)
-    ntend = win_end(irec)
-    nlen=ntend-ntstart+1
-    if(nlen<1 .or. nlen>NSTEP) cycle
+    tstart = win_start(irec)
+    tend = win_end(irec)
 
-    if(norm2(d(ntstart:ntend),1)<SMALL_VAL .or. &
-        norm2(s(ntstart:ntend),1)<SMALL_VAL) cycle ! zero  master trace
     ! loop over reference trace
     do jrec=irec+1,nrec_proc
     ! get data 
@@ -670,13 +653,8 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
     s_ref(:)=seism_syn(:,jrec)
 
     ! window info
-    ntstart_ref = win_start(jrec)
-    ntend_ref= win_end(jrec)
-    nlen_ref=ntend_ref-ntstart_ref+1
-    if(nlen_ref<1 .or. nlen_ref>NSTEP) cycle
-
-    if(norm2(d_ref(ntstart_ref:ntend_ref),1)<SMALL_VAL .or. &
-        norm2(s_ref(ntstart_ref:ntend_ref),1)<SMALL_VAL) cycle  ! zero reference trace
+    tstart_ref = win_start(jrec)        
+    tend_ref= win_end(jrec)
 
     if(.not. ex) then
         cc_max_obs=0.0
@@ -684,15 +662,18 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
             +(st_yval(jrec)-st_yval(irec))**2 &
             +(st_zval(jrec)-st_zval(irec))**2)
         if(dis_rr<=DD_max .and. dis_rr>=DD_min)&
-            call CC_similarity(d,d_ref,NSTEP,&
-            ntstart,ntend,ntstart_ref,ntend_ref,window_type,cc_max_obs)
+            call CC_similarity(d,d_ref,NSTEP,deltat,&
+            tstart,tend,tstart_ref,tend_ref,&
+            taper_percentage,taper_type,&
+            cc_max_obs)
+
         if(cc_max_obs>cc_threshold)  is_pair(irec,jrec) = 1
     endif !! ex
 
     if(DISPLAY_DETAILS .and. compute_adjoint) then
         print*      
         print*,'pair irec=',irec, 'jrec=',jrec           
-        print*,'window -- ',ntstart,ntend,ntstart_ref,ntend_ref
+        print*,'window -- ',tstart,tend,tstart_ref,tend_ref
         print*, 'rr distance dis_rr, DD_min/DD_max: ',dis_rr, DD_min, DD_max 
         print*, 'cc similarity -- ', cc_max_obs 
         print*,'is_pair : ',is_pair(irec,jrec)
@@ -708,18 +689,20 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
 
         ! number of double difference measurements
         call misfit_adj_DD(measurement_type,d,d_ref,s,s_ref,NSTEP,deltat,f0,&
-            ntstart,ntend,ntstart_ref,ntend_ref,window_type,compute_adjoint,&
+            tstart,tend,tstart_ref,tend_ref,taper_percentage,taper_type,&
+            compute_adjoint, &
             adj,adj_ref,num,misfit_DD)
-        num_DD = num_DD + num
-        num_measure=num_measure+1
+            num_DD = num_DD + num
+            num_measure=num_measure+1
+
         if(DISPLAY_DETAILS) then 
             print* 
             print*,'irec=',irec,'jrec=',jrec, 'misfit_',measurement_type,'_DD=',misfit_DD
         endif
     
         if(compute_adjoint) then
-            call process_adj_trace(adj,ntstart,ntend,dis_sr1)
-            call process_adj_trace(adj_ref,ntstart_ref,ntend_ref,dis_sr2)
+            call process_adj_trace(adj,dis_sr1)
+            call process_adj_trace(adj_ref,,dis_sr2)
             if(DISPLAY_DETAILS) then
                 print*, 'Min/Max of adj :',minval(adj(:)),maxval(adj(:))
                 print*, 'Min/Max of adj_ref:',minval(adj_ref(:)),maxval(adj_ref(:))
@@ -734,6 +717,8 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
         !! save waveform similarity
         if(.not. ex) write(IIN,'(2I5,1e15.5,I5)') irec,jrec,cc_max_obs,is_pair(irec,jrec)
 
+    else
+        write(IOUT,*) 0.0
     endif  ! is_pair
 
     enddo  ! jrec 
