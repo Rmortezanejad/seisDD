@@ -474,13 +474,6 @@ subroutine process_data_all(seism,tag)
                 taper_len = taper_percentage/2.0 * (tend-tstart)
                 tstart=max(tstart-taper_len,0.0)
                 tend=min(tend+taper_len,(NSTEP-1)*deltat)
-                if((tend-tstart)<min_window_len) then 
-                    tstart=0.0
-                    tend=0.0
-                endif
-            else
-                tstart=0.0
-                tend=0.0
             endif
         endif ! window
         ! save
@@ -579,6 +572,7 @@ subroutine Absolute_diff(measurement_type)
     ! window info
     tstart = win_start(irec)
     tend= win_end(irec)
+    if((tend-tstart)<min_window_len) cycle
     
     !!  evaluate misfit and adj 
     call misfit_adj_AD(measurement_type,d,s,NSTEP,&
@@ -645,6 +639,7 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
     ! window info
     tstart = win_start(irec)
     tend = win_end(irec)
+    if((tend-tstart)<min_window_len) cycle
 
     ! loop over reference trace
     do jrec=irec+1,nrec_proc
@@ -655,6 +650,7 @@ subroutine Relative_diff(input_dir,data_name,measurement_type)
     ! window info
     tstart_ref = win_start(jrec)        
     tend_ref= win_end(jrec)
+    if((tend_ref-tstart_ref)<min_window_len) cycle
 
     if(.not. ex) then
         cc_max_obs=0.0

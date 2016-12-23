@@ -29,7 +29,7 @@ cp -r $specfem_path/bin $submit_dir/
 cp -r $package_path/scripts/submit.sh $submit_dir/
 cp -r DATA $submit_dir/
 cp -r parameter $submit_dir/
-if $SU_process ; then
+if [ $SU_process ] ; then
     cp -r $SU_process_path $submit_dir/
 fi
 

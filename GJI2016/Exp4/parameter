@@ -73,7 +73,7 @@ wavelet_path="$seisDD/seisDD/lib/WT_basis"
 
 TIME_WINDOW=true
 VEL_TOP=5000
-VEL_BOT=4000
+VEL_BOT=3000
 
 ### postprocessing
 # smooth
