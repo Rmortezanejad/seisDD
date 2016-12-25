@@ -112,6 +112,8 @@ if __name__ == '__main__':
             levels=np.linspace(-np.max(abs(stack(v))),np.max(abs(stack(v))),101)
         else:
             levels=np.linspace(np.min((stack(v))),np.max((stack(v))),101)
+            # if you want to solid the max and min, you can set your value here
+            
         _, p = meshplot(stack(x),stack(z), stack(v),levels=levels)
 
         pylab.gca().invert_yaxis()
