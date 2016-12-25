@@ -1,0 +1,22 @@
+#!/bin/bash 
+
+# temporary work around for pbsdsh
+
+k=0;
+#echo $PBS_NODEFILE
+#cat  $PBS_NODEFILE
+
+for i in `cat $PBS_NODEFILE`;
+do
+        ssh $i "export PBS_VNODENUM=$k; $@" &
+        k=$(($k + 1));
+
+        echo "k=",$k
+        if [ $k -gt 48 ]; then
+        break
+        fi
+
+done
+
+wait
+
